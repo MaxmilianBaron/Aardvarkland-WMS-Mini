@@ -4,7 +4,8 @@
 
 [▶ Otevřít interaktivní preview](https://maxmilianbaron.github.io/Aardvarkland-WMS-Mini/)
 
-Preview běží přímo v prohlížeči a ukládá data pouze lokálně do IndexedDB.
+Preview zobrazuje živou aplikaci v mobilním viewportu 411 × 868 a ukládá data
+pouze lokálně do IndexedDB.
 Není připojené k Aardvarkland WMS Serveru ani k žádné zákaznické databázi.
 
 ## Funkce
