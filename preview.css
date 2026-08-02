@@ -34,9 +34,9 @@ header strong { font-size: 18px; }
 header a { color: #18181b; font-size: 14px; font-weight: 700; }
 
 .phone {
+  box-sizing: content-box;
   width: 411px;
   height: 868px;
-  max-height: calc(100vh - 86px);
   overflow: hidden;
   border: 8px solid #18181b;
   border-radius: 34px;
@@ -55,5 +55,5 @@ iframe {
 @media (max-width: 520px) {
   .preview-shell { display: block; padding: 0; }
   header { display: none; }
-  .phone { width: 100vw; height: 100dvh; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
+  .phone { box-sizing: border-box; width: 100vw; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
 }
