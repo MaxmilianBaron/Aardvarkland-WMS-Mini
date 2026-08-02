@@ -1,12 +1,13 @@
 # Aardvarkland WMS-Mini
 
+[English version](#english)
+
 **Offline skladová aplikace pro jeden sklad a jedno zařízení.**
 
-[▶ Otevřít interaktivní preview](https://maxmilianbaron.github.io/Aardvarkland-WMS-Mini/)
+[▶ Otevřít interaktivní mobilní preview](https://maxmilianbaron.github.io/Aardvarkland-WMS-Mini/)
 
-Preview zobrazuje živou aplikaci v mobilním viewportu 411 × 868 a ukládá data
-pouze lokálně do IndexedDB.
-Není připojené k Aardvarkland WMS Serveru ani k žádné zákaznické databázi.
+Preview zobrazuje živou aplikaci v mobilním viewportu 411 × 868. Provozní data
+ukládá pouze lokálně do IndexedDB v konkrétním profilu prohlížeče.
 
 ## Funkce
 
@@ -18,10 +19,12 @@ Není připojené k Aardvarkland WMS Serveru ani k žádné zákaznické databá
 - PIN zámek a šest jazyků,
 - instalace jako offline PWA nebo Android aplikace.
 
-Veřejný repozitář obsahuje pouze sestavené preview. Neobsahuje privátní
-zdrojový strom, Android projekt, podpisové klíče, interní testy ani provozní
-data. Data vytvořená v preview zůstávají v konkrétním profilu prohlížeče a lze
-je kdykoli odstranit vymazáním dat webu.
+## Soukromí a veřejný repozitář
+
+Data vytvořená v preview zůstávají v prohlížeči a lze je odstranit vymazáním
+dat webu. Veřejný repozitář obsahuje pouze sestavené preview. Neobsahuje
+privátní zdrojový strom, Android projekt, podpisové klíče, interní testy ani
+provozní data.
 
 ---
 
@@ -29,11 +32,26 @@ je kdykoli odstranit vymazáním dat webu.
 
 **Offline warehouse application for one warehouse and one device.**
 
-[▶ Open the interactive preview](https://maxmilianbaron.github.io/Aardvarkland-WMS-Mini/)
+[▶ Open the interactive mobile preview](https://maxmilianbaron.github.io/Aardvarkland-WMS-Mini/)
 
-The preview provides local inventory, movements, batches, expiry tracking,
-camera scanning, imports, exports, reports, backups, PIN protection, and six
-languages. Operational data stays in the browser and is not synchronized with
-the Server edition. This repository contains only the compiled public preview.
+The preview displays the live application in a 411 × 868 mobile viewport.
+Operational data is stored only in IndexedDB in the current browser profile.
+
+## Features
+
+- products, categories, locations, inventory, and minimum stock levels,
+- receiving, issuing, transfers, stock counts, and movement history,
+- batches, expiry tracking, and upcoming-expiry alerts,
+- QR and barcode scanning with the phone camera,
+- CSV/XLSX import, Excel export, CSV/PDF reports, and JSON backup,
+- PIN lock and six languages,
+- installation as an offline PWA or Android application.
+
+## Privacy and public repository
+
+Data created in the preview stays in the browser and can be removed by clearing
+the site's data. The public repository contains only the compiled preview. It
+does not contain the private source tree, Android project, signing keys,
+internal tests, or operational data.
 
 All rights reserved by Aardvarkland Inc.
