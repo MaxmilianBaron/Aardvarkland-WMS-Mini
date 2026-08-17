@@ -1,0 +1,66 @@
+name: Free UI preview smoke
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ui-preview-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ui-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 24.15.0
+
+      - name: Build and verify Pages artifact
+        run: node scripts/build-pages-artifact.mjs
+
+      - name: Install Playwright test runner
+        run: npm install --no-save --package-lock=false --ignore-scripts @playwright/test@1.55.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start static preview server
+        run: |
+          python3 -m http.server 4173 --directory _site --bind 127.0.0.1 > /tmp/wms-mini-preview.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/wms-mini-preview.log
+          exit 1
+
+      - name: Run UI smoke tests and screenshots
+        env:
+          PREVIEW_URL: http://127.0.0.1:4173/
+        run: npx playwright test e2e/preview.spec.mjs e2e/storage-fallback.spec.mjs --workers=1 --reporter=line
+
+      - name: Upload UI screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: wms-mini-pages-ui-screenshots
+          path: artifacts/ui
+          if-no-files-found: warn
+          retention-days: 5

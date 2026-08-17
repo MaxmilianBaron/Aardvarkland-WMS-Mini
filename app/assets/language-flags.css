@@ -1,0 +1,71 @@
+/* Cross-platform language flags. SVG assets are used because Windows renders
+   Unicode regional flag emoji as two-letter country abbreviations. */
+.language-switch[data-language-code] {
+  position: relative;
+  overflow: hidden;
+}
+
+.language-switch[data-language-code] > svg {
+  display: none;
+}
+
+.language-switch[data-language-code]::after,
+.language-flag-image {
+  display: block;
+  border-radius: 3px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  box-shadow: 0 0 0 1px rgba(23, 32, 43, 0.18);
+}
+
+:root[data-theme="dark"] .language-switch[data-language-code]::after,
+:root[data-theme="dark"] .language-flag-image {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
+.language-switch[data-language-code]::after {
+  width: 27px;
+  height: 18px;
+  content: "";
+}
+
+.language-flag-image {
+  width: 28px !important;
+  height: 19px !important;
+  flex: 0 0 28px !important;
+  overflow: hidden;
+  color: transparent !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+}
+
+.language-switch[data-language-code="cs"]::after,
+.language-menu__list button[data-language-code="cs"] .language-flag-image {
+  background-image: url("../icons/flags/cz.svg");
+}
+
+.language-switch[data-language-code="en"]::after,
+.language-menu__list button[data-language-code="en"] .language-flag-image {
+  background-image: url("../icons/flags/gb.svg");
+}
+
+.language-switch[data-language-code="ua"]::after,
+.language-menu__list button[data-language-code="ua"] .language-flag-image {
+  background-image: url("../icons/flags/ua.svg");
+}
+
+.language-switch[data-language-code="fr"]::after,
+.language-menu__list button[data-language-code="fr"] .language-flag-image {
+  background-image: url("../icons/flags/fr.svg");
+}
+
+.language-switch[data-language-code="de"]::after,
+.language-menu__list button[data-language-code="de"] .language-flag-image {
+  background-image: url("../icons/flags/de.svg");
+}
+
+.language-switch[data-language-code="es"]::after,
+.language-menu__list button[data-language-code="es"] .language-flag-image {
+  background-image: url("../icons/flags/es.svg");
+}

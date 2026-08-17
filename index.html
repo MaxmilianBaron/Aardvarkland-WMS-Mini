@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111827" />
+    <meta name="description" content="Interactive mobile preview of Aardvarkland WMS-Mini." />
+    <title>Aardvarkland WMS-Mini · mobile preview</title>
+    <script>
+      try {
+        window.localStorage.setItem('aardvarkland-mini-language', 'en');
+      } catch {}
+      if (window.matchMedia('(max-width: 520px)').matches) {
+        window.location.replace('./app/?v=10');
+      }
+    </script>
+    <link rel="stylesheet" href="./preview.css" />
+  </head>
+  <body>
+    <main class="preview-shell">
+      <header>
+        <div>
+          <span>Aardvarkland</span>
+          <strong>WMS-Mini · mobile preview</strong>
+        </div>
+        <a href="./app/?v=10" target="_blank" rel="noreferrer">Open standalone</a>
+      </header>
+      <div class="phone" aria-label="Live mobile preview of WMS-Mini">
+        <iframe src="./app/?v=10" title="Aardvarkland WMS-Mini" allow="camera"></iframe>
+      </div>
+    </main>
+  </body>
+</html>
