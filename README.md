@@ -2,7 +2,7 @@
 
 A lightweight offline-first open-source warehouse management system for one warehouse and one device.
 
-[Live Demo](https://maxmilianbaron.github.io/Aardvarkland-WMS-Mini/) · [Screenshots](#screenshots) · [Quick Start](#quick-start) · [Android](ANDROID.md) · [Full WMS](https://github.com/MaxmilianBaron/Aardvarkland-WMS)
+[Live Demo](https://maxmilianbaron.github.io/Aardvarkland-WMS-Mini/) · [Quick Start](#quick-start) · [Android](ANDROID.md) · [Full WMS](https://github.com/MaxmilianBaron/Aardvarkland-WMS)
 
 ![MIT License](https://img.shields.io/badge/license-MIT-blue.svg) ![React](https://img.shields.io/badge/React-19-61dafb.svg)
 
@@ -29,12 +29,6 @@ WMS Mini is a local-first React/Vite PWA and Capacitor Android app. IndexedDB is
 - Optional local PIN lock using salted PBKDF2
 - Czech, English, Ukrainian, French, German, and Spanish interfaces
 - PWA installation and Capacitor Android project
-
-## Screenshots
-
-| Desktop warehouse overview | Mobile workflow |
-| --- | --- |
-| ![WMS Mini desktop](docs/images/wms-mini-desktop.png) | ![WMS Mini mobile](docs/images/wms-mini-mobile.png) |
 
 ## Live Demo
 
@@ -116,7 +110,7 @@ No server, account system, central synchronization, ERP integration, or shared m
 ## Project Structure
 
 - `src/` — React UI, domain rules, storage, security, backup, and localization
-- `public/` — PWA manifest, service worker, icons, fonts, and screenshots
+- `public/` — PWA manifest, service worker, icons, and fonts
 - `scripts/` — executable contract and behavior tests
 - `e2e/` — browser UI scenarios
 - `android/` — Capacitor Android wrapper
