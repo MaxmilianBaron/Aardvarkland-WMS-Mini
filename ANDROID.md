@@ -15,7 +15,7 @@ and `targetSdkVersion = 36` in `android/variables.gradle`.
 ## Build
 
 ```powershell
-$env:JAVA_HOME = 'C:\Program Files\Eclipse Adoptium\jdk-21.0.12.8-hotspot'
+# Set JAVA_HOME to your local JDK 21 installation before running Gradle.
 $env:GRADLE_OPTS = '-Djavax.net.ssl.trustStoreType=Windows-ROOT'
 npm run android:sync
 npm run android:debug
@@ -31,8 +31,8 @@ Outputs:
 ## Device install and acceptance
 
 ```powershell
-C:\Android\platform-tools\adb.exe devices
-C:\Android\platform-tools\adb.exe install -r android\app\build\outputs\apk\debug\app-debug.apk
+adb devices
+adb install -r android\app\build\outputs\apk\debug\app-debug.apk
 ```
 
 Use `-r` to preserve existing Mini data. Verify camera permission, camera
