@@ -11,4 +11,4 @@ Thank you for helping improve Aardvarkland WMS Mini.
 
 Before submitting a pull request, run `npm run typecheck`, `npm test`, and `npm run build`. Add tests for storage, migration, import, backup, and inventory-rule changes. Keep the single-device and local-first boundary explicit.
 
-Do not include real warehouse exports, signing material, generated Android output, credentials, or personal data. Use fictional sample data in tests and screenshots. Describe separately what was source-tested and what was verified in a browser or on a physical device.
+Do not include real warehouse exports, signing material, generated Android output, credentials, personal data, or screenshots captured from personal devices. Use fictional sample data in tests and documentation. Describe separately what was source-tested and what was verified in a browser or on a physical device.

@@ -64,7 +64,7 @@ test('PWA manifest has installable PNG and maskable assets', async () => {
   assert.equal(manifest.scope, './')
   assert.ok(manifest.icons.some((icon) => icon.src.endsWith('icon-192.png') && icon.sizes === '192x192'))
   assert.ok(manifest.icons.some((icon) => icon.purpose === 'maskable'))
-  assert.equal(manifest.screenshots.length, 2)
+  assert.equal('screenshots' in manifest, false)
 })
 
 test('Mini protects master data referenced by movement history', async () => {
