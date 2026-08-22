@@ -1,0 +1,34 @@
+name: Browser UI
+
+on:
+  pull_request:
+    paths: ['src/**', 'public/**', 'e2e/**', 'package*.json', '.github/workflows/ui.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24.15.0
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm install --no-save --package-lock=false @playwright/test@1.55.0
+      - run: npx playwright install --with-deps chromium
+      - name: Start preview
+        run: npm run preview > /tmp/wms-mini.log 2>&1 &
+      - name: Wait for preview
+        run: |
+          for attempt in $(seq 1 40); do
+            curl -fsS http://127.0.0.1:4010/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/wms-mini.log
+          exit 1
+      - run: npx playwright test e2e/mini-ui.spec.mjs --workers=1 --reporter=line

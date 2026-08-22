@@ -1,0 +1,4 @@
+/* Visual refinements validated through the Playwright screenshot suite. */
+.dashboard-page > .two-column {
+  align-items: start;
+}
