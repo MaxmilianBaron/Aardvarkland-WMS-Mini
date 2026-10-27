@@ -1,4 +1,5 @@
 import { emptyMiniState } from './domain';
+import { quantityUnits } from './quantity';
 import type { MiniBalance, MiniBatch, MiniCategory, MiniLocation, MiniMovement, MiniProduct, MiniState, MovementType } from './types';
 
 const DATABASE_NAME = 'aardvarkland-mini-wms';
@@ -82,11 +83,11 @@ export async function loadMiniState(readOnly = false): Promise<MiniState> {
     if (invalidPrimary || hasFallbackDocument()) throw new Error('STORAGE_RECOVERY_REQUIRED');
     activeBackend = 'indexeddb';
     return emptyMiniState();
-  } catch (error) {
-    if ((error instanceof Error && error.message === 'STORAGE_RECOVERY_REQUIRED')
-      || (!fallback && hasFallbackDocument())) throw new Error('STORAGE_RECOVERY_REQUIRED');
+  } catch {
+    // Database failure is not proof of a new, empty warehouse.
+    if (!fallback) throw new Error('STORAGE_RECOVERY_REQUIRED');
     activeBackend = 'localStorage';
-    return fallback?.state ?? emptyMiniState();
+    return fallback.state;
   } finally {
     database?.close();
   }
@@ -341,14 +342,18 @@ function validateDocumentInvariants(input: {
   assertUnique(input.balances.map((item) => `${item.productId}\u0000${item.locationId}`));
 
   const balanceByKey = new Map(input.balances.map((item) => [`${item.productId}\u0000${item.locationId}`, item.quantity]));
-  const batchQuantityByKey = new Map<string, number>();
+  // The domain uses integer micro-units: 0.1 + 0.2 must equal 0.3 here too.
+  const batchQuantityUnitsByKey = new Map<string, number>();
   for (const batch of input.batches) {
-    const key = `${batch.productId}\u0000${batch.locationId}`;
-    batchQuantityByKey.set(key, (batchQuantityByKey.get(key) ?? 0) + batch.quantity);
+    const key = [batch.productId, batch.locationId].join('\u0000');
+    const next = (batchQuantityUnitsByKey.get(key) ?? 0) + quantityUnits(batch.quantity);
+    if (!Number.isSafeInteger(next)) throw new Error('INVALID_BACKUP');
+    batchQuantityUnitsByKey.set(key, next);
   }
-  for (const [key, batchQuantity] of batchQuantityByKey) {
-    const balance = balanceByKey.get(key) ?? 0;
-    if (batchQuantity > balance) throw new Error('INVALID_BACKUP');
+  for (const [key, batchQuantityUnits] of batchQuantityUnitsByKey) {
+    if (batchQuantityUnits > quantityUnits(balanceByKey.get(key) ?? 0)) {
+      throw new Error('INVALID_BACKUP');
+    }
   }
 }
 

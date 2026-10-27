@@ -249,3 +249,37 @@ test('overlapping saves commit in invocation order so an older slow write cannot
     removeBrowserStorage();
   }
 });
+
+test('valid decimal lots 0.1 + 0.2 persist with aggregate stock 0.3', async () => {
+  const { indexedDbHarness } = installBrowserStorage();
+  try {
+    const saved = miniState('Decimal lots', '2026-10-27T00:00:00.000Z');
+    saved.products = [{
+      id: 'p', sku: 'P', name: 'Product', barcode: '', unit: 'kg',
+      minimumStock: 0, categoryId: null, createdAt: saved.updatedAt, updatedAt: saved.updatedAt,
+    }];
+    saved.locations = [{ id: 'l', code: 'L', name: 'Location', createdAt: saved.updatedAt }];
+    saved.balances = [{ productId: 'p', locationId: 'l', quantity: 0.3 }];
+    saved.batches = [0.1, 0.2].map((quantity, index) => ({
+      id: 'batch-' + index, productId: 'p', locationId: 'l',
+      lotNumber: 'lot-' + index, expiryDate: null,
+      quantity, createdAt: saved.updatedAt, updatedAt: saved.updatedAt,
+    }));
+    assert.equal(await saveMiniState(saved), 'indexeddb');
+    const loaded = await loadMiniState();
+    assert.equal(loaded.batches.length, 2);
+    assert.equal(loaded.balances[0].quantity, 0.3);
+    assert.ok(indexedDbHarness.readStored());
+  } finally { removeBrowserStorage(); }
+});
+
+test('unavailable IndexedDB without a backup fails closed, preserving existing stock', async () => {
+  const { indexedDbHarness } = installBrowserStorage();
+  try {
+    indexedDbHarness.seed(miniState('Existing warehouse', '2026-10-27T00:00:00.000Z'));
+    indexedDbHarness.fail();
+    await assert.rejects(loadMiniState(), /STORAGE_RECOVERY_REQUIRED/);
+    indexedDbHarness.recover();
+    assert.equal((await loadMiniState()).warehouseName, 'Existing warehouse');
+  } finally { removeBrowserStorage(); }
+});

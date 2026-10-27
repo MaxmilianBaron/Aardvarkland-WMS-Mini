@@ -52,6 +52,8 @@ See [ANDROID.md](ANDROID.md) for SDK setup and release notes. Sign release build
 
 IndexedDB is the main store, with a localStorage fallback. There is no server account or automatic cloud synchronization. Export backups regularly and keep them outside the device.
 
+If neither storage backend can be read, the app enters recovery mode rather than treating a storage failure as an empty warehouse. The local PIN locks the app interface; it does **not** encrypt IndexedDB, localStorage or exported JSON backups. Use device encryption and a secure screen lock for sensitive data.
+
 Camera scanning, PWA installation and Android data retention should be checked on the target device.
 
 - Security reports: [SECURITY.md](SECURITY.md)
