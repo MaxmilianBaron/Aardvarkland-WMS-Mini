@@ -1,0 +1,12 @@
+{
+  "name": "wms-mini-ui-checks",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test --workers=1 --reporter=line"
+  },
+  "dependencies": {
+    "@playwright/test": "1.55.1"
+  }
+}

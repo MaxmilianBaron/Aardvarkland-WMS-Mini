@@ -1,0 +1,41 @@
+name: Browser UI
+
+on:
+  pull_request:
+    paths: ['src/**', 'public/**', 'e2e/**', 'package*.json', 'scripts/**', 'preview/**', 'vite.config.ts', '.github/workflows/ui.yml']
+
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mini-ui-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: 24.15.0
+          cache: npm
+      - run: npm ci
+      - run: node scripts/build-preview.mjs
+      - run: node scripts/verify-preview.mjs
+      - run: npm ci --prefix e2e --ignore-scripts
+      - run: node e2e/node_modules/@playwright/test/cli.js install --with-deps chromium
+      - run: node scripts/verify-ui.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: wms-mini-ui-screenshots
+          path: e2e/artifacts/ui
+          retention-days: 7
