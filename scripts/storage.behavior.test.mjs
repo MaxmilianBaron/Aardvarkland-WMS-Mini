@@ -43,12 +43,14 @@ function createIndexedDbHarness() {
   let heldWritePromise = null;
   let heldWriteResolve = null;
   let writeStarts = 0;
+  let readwriteStarts = 0;
   const puts = new Map();
   const clone = value => value === undefined ? undefined : structuredClone(value);
   const keyOf = key => JSON.stringify(key);
   const entries = name => [...stores.get(name).values()].map(clone);
 
   function makeTransaction(names, mode) {
+    if (mode === 'readwrite') readwriteStarts += 1;
     const selected = Array.isArray(names) ? names : [names];
     const working = new Map(selected.map(name => {
       if (!stores.has(name)) throw new Error('No such store: ' + name);
@@ -229,6 +231,7 @@ function createIndexedDbHarness() {
       commit();
     },
     writeCount() { return writeStarts; },
+    transactionCount() { return readwriteStarts; },
     putCount(name) { return puts.get(name) ?? 0; },
   };
 }
@@ -339,11 +342,11 @@ test('overlapping saves commit in invocation order so an older slow write cannot
     // while save #1 is still held. The fixed implementation keeps it queued.
     await Promise.resolve();
     await Promise.resolve();
-    assert.equal(indexedDbHarness.writeCount(), 1);
+    assert.equal(indexedDbHarness.transactionCount(), 1);
 
     indexedDbHarness.releaseHeldWrite();
     assert.deepEqual(await Promise.all([firstSave, secondSave]), ['indexeddb', 'indexeddb']);
-    assert.equal(indexedDbHarness.writeCount(), 2);
+    assert.equal(indexedDbHarness.transactionCount(), 2);
     assert.equal(indexedDbHarness.readStored().state.warehouseName, 'Newer state');
   } finally {
     removeBrowserStorage();
