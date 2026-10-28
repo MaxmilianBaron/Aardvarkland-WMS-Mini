@@ -51,6 +51,8 @@ See [ANDROID.md](ANDROID.md) for SDK setup and release notes. Sign release build
 ## Data
 
 IndexedDB is the main store, with a localStorage fallback. There is no server account or automatic cloud synchronization. Export backups regularly and keep them outside the device.
+IndexedDB v4 stores warehouse records and movement histories incrementally with atomic commits. See [migration, recovery and benchmark notes](docs/indexeddb-v4.md) before upgrading data-critical devices. Older app versions using IndexedDB v3 cannot open a migrated v4 profile; export JSON before any downgrade.
+
 
 If neither storage backend can be read, the app enters recovery mode rather than treating a storage failure as an empty warehouse. The local PIN locks the app interface; it does **not** encrypt IndexedDB, localStorage or exported JSON backups. Use device encryption and a secure screen lock for sensitive data.
 
