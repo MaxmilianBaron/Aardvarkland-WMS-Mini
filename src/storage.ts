@@ -61,6 +61,7 @@ async function loadMiniStateNow(readOnly: boolean): Promise<MiniState> {
     // A corrupt incremental snapshot is NEVER replaced by the stale legacy
     // record. Preserve all its records for recovery or an external backup.
     const damagedIncremental = invalidPrimary && snapshot.kind === 'incremental';
+    if (damagedIncremental) cacheKnown = false;
     if (!damagedIncremental) remember(primary?.state ?? null, snapshot.revision, snapshot.movementOrder);
 
     if (fallback && shouldPreferFallback(primary, fallback)) {
@@ -113,6 +114,7 @@ async function loadMiniStateNow(readOnly: boolean): Promise<MiniState> {
     activeBackend = 'indexeddb';
     return emptyMiniState();
   } catch {
+    cacheKnown = false;
     // Failure to open/read is not evidence that the warehouse is empty.
     if (!fallback) throw new Error('STORAGE_RECOVERY_REQUIRED');
     activeBackend = 'localStorage';
