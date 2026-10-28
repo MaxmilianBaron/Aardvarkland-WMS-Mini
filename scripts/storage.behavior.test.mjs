@@ -30,78 +30,150 @@ function createLocalStorage() {
   };
 }
 
+// A transactional IDB simulation: reads see committed records, readwrite
+// changes are isolated until commit, and abort never publishes partial rows.
+// The browser e2e suite exercises the real Chromium implementation as well.
 function createIndexedDbHarness() {
-  let storedValue;
+  const stores = new Map([['state', new Map()]]);
+  let version = 3;
   let failOpen = false;
+  let abortNext = false;
   let holdNextWrite = false;
   let heldCommit = null;
   let heldWritePromise = null;
   let heldWriteResolve = null;
   let writeStarts = 0;
+  const puts = new Map();
+  const clone = value => value === undefined ? undefined : structuredClone(value);
+  const keyOf = key => JSON.stringify(key);
+  const entries = name => [...stores.get(name).values()].map(clone);
+
+  function makeTransaction(names, mode) {
+    const selected = Array.isArray(names) ? names : [names];
+    const working = new Map(selected.map(name => {
+      if (!stores.has(name)) throw new Error('No such store: ' + name);
+      return [name, new Map([...stores.get(name)].map(([key, value]) => [key, clone(value)]))];
+    }));
+    let pending = 0, finished = false;
+    const transaction = {
+      error: null, oncomplete: null, onerror: null, onabort: null,
+      abort() {
+        if (finished) return;
+        finished = true;
+        queueMicrotask(() => transaction.onabort?.());
+      },
+      objectStore(name) {
+        if (!working.has(name)) throw new Error('Store not in transaction: ' + name);
+        const map = working.get(name);
+        return {
+          get(key) { return request(() => clone(map.get(keyOf(key)))); },
+          getAll() { return request(() => [...map.values()].map(clone)); },
+          count() { return request(() => map.size); },
+          put(value, key) {
+            if (mode !== 'readwrite') throw new Error('read-only transaction');
+            return request(() => {
+              map.set(keyOf(key), clone(value));
+              puts.set(name, (puts.get(name) ?? 0) + 1);
+              return key;
+            }, true);
+          },
+          delete(key) {
+            if (mode !== 'readwrite') throw new Error('read-only transaction');
+            return request(() => map.delete(keyOf(key)));
+          },
+          clear() {
+            if (mode !== 'readwrite') throw new Error('read-only transaction');
+            return request(() => map.clear());
+          },
+        };
+      },
+    };
+
+    function maybeCommit() {
+      if (pending || finished) return;
+      queueMicrotask(() => {
+        if (pending || finished) return;
+        finished = true;
+        if (mode === 'readwrite' && abortNext) {
+          abortNext = false;
+          transaction.error = new Error('simulated transaction abort');
+          transaction.onabort?.();
+          return;
+        }
+        if (mode === 'readwrite') for (const [name, map] of working) stores.set(name, map);
+        transaction.oncomplete?.();
+      });
+    }
+
+    function request(operation, isPut = false) {
+      const result = { result: undefined, error: null, onsuccess: null, onerror: null };
+      pending += 1;
+      const execute = () => {
+        if (finished) return;
+        try {
+          result.result = operation();
+          result.onsuccess?.();
+        } catch (error) {
+          result.error = error;
+          transaction.error = error;
+          result.onerror?.();
+          transaction.onerror?.();
+          transaction.abort();
+        }
+        pending -= 1;
+        maybeCommit();
+      };
+      queueMicrotask(() => {
+        if (isPut) {
+          writeStarts += 1;
+          if (holdNextWrite) {
+            holdNextWrite = false;
+            heldCommit = execute;
+            heldWriteResolve?.();
+            return;
+          }
+        }
+        execute();
+      });
+      return result;
+    }
+    queueMicrotask(maybeCommit);
+    return transaction;
+  }
 
   const indexedDB = {
-    open() {
+    open(_name, wantedVersion) {
       const request = {
-        result: undefined,
-        error: null,
-        onupgradeneeded: null,
-        onsuccess: null,
-        onerror: null,
-        onblocked: null,
+        result: undefined, error: null, onupgradeneeded: null,
+        onsuccess: null, onerror: null, onblocked: null,
       };
-
       queueMicrotask(() => {
         if (failOpen) {
           request.error = new Error('simulated IndexedDB outage');
           request.onerror?.();
           return;
         }
-
         const database = {
-          objectStoreNames: { contains: () => true },
-          createObjectStore() {},
-          close() {},
-          transaction() {
-            const transaction = {
-              error: null,
-              oncomplete: null,
-              onerror: null,
-              onabort: null,
-              objectStore() {
-                return {
-                  get() {
-                    const readRequest = { result: undefined, error: null, onsuccess: null, onerror: null };
-                    queueMicrotask(() => {
-                      readRequest.result = storedValue === undefined ? undefined : structuredClone(storedValue);
-                      readRequest.onsuccess?.();
-                    });
-                    return readRequest;
-                  },
-                  put(value) {
-                    writeStarts += 1;
-                    const commit = () => {
-                      storedValue = structuredClone(value);
-                      queueMicrotask(() => transaction.oncomplete?.());
-                    };
-                    if (holdNextWrite) {
-                      holdNextWrite = false;
-                      heldCommit = commit;
-                      heldWriteResolve?.();
-                      return;
-                    }
-                    queueMicrotask(commit);
-                  },
-                };
-              },
-            };
-            return transaction;
+          objectStoreNames: { contains: name => stores.has(name) },
+          createObjectStore(name) {
+            if (stores.has(name)) throw new Error('Store already exists');
+            stores.set(name, new Map());
           },
+          transaction: makeTransaction,
+          close() {},
+          onversionchange: null,
         };
-
         request.result = database;
+        if (wantedVersion > version) {
+          version = wantedVersion;
+          request.onupgradeneeded?.();
+        } else if (wantedVersion < version) {
+          request.error = new Error('VersionError');
+          request.onerror?.();
+          return;
+        }
         request.onsuccess?.();
       });
-
       return request;
     },
   };
@@ -110,12 +182,39 @@ function createIndexedDbHarness() {
     indexedDB,
     fail() { failOpen = true; },
     recover() { failOpen = false; },
-    seed(value) { storedValue = structuredClone(value); },
-    readStored() { return storedValue === undefined ? undefined : structuredClone(storedValue); },
+    seed(value) { stores.get('state').set(keyOf('warehouse'), clone(value)); },
+    readLegacy() { return clone(stores.get('state').get(keyOf('warehouse'))); },
+    storeRows(name) { return entries(name); },
+    head() { return clone(stores.get('state').get(keyOf('warehouse-incremental-v1'))); },
+    removeHead() { stores.get('state').delete(keyOf('warehouse-incremental-v1')); },
+    bumpRevision() {
+      const key = keyOf('warehouse-incremental-v1');
+      const head = clone(stores.get('state').get(key));
+      head.revision += 1;
+      stores.get('state').set(key, head);
+    },
+    readStored() {
+      const head = this.head();
+      if (!head) return this.readLegacy();
+      const array = name => entries(name).sort((a, b) => a.position - b.position).map(v => v.row);
+      return {
+        persistenceVersion: 1, savedAt: head.savedAt,
+        state: {
+          schemaVersion: 3,
+          warehouseName: head.warehouseName, updatedAt: head.updatedAt,
+          onboardingCompleted: head.onboardingCompleted, lastBackupAt: head.lastBackupAt,
+          products: array('products'), categories: array('categories'),
+          locations: array('locations'), balances: array('balances'),
+          batches: array('batches'),
+          movements: entries('movements').sort((a, b) => b.order - a.order).map(v => v.row),
+        },
+      };
+    },
+    abortNextTransaction() { abortNext = true; },
     holdNextWrite() {
       if (heldCommit) throw new Error('a write is already held');
       holdNextWrite = true;
-      heldWritePromise = new Promise((resolve) => { heldWriteResolve = resolve; });
+      heldWritePromise = new Promise(resolve => { heldWriteResolve = resolve; });
     },
     waitForHeldWrite() {
       if (!heldWritePromise) throw new Error('no held write was requested');
@@ -130,6 +229,7 @@ function createIndexedDbHarness() {
       commit();
     },
     writeCount() { return writeStarts; },
+    putCount(name) { return puts.get(name) ?? 0; },
   };
 }
 
