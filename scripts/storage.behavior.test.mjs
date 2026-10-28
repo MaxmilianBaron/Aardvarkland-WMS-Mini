@@ -539,3 +539,17 @@ test('restore, deletion and reorder replace the history and do not revive discar
     assert.deepEqual(parseMiniBackup(idb.readStored().state).movements.map(m => m.id), ['m-5', 'm-2', 'm-0']);
   } finally { removeBrowserStorage(); }
 });
+
+test('missing head after a previously empty v4 migration cannot resurrect stale legacy stock', async () => {
+  const { indexedDbHarness: idb } = installBrowserStorage();
+  try {
+    const original = miniState('Old empty snapshot', '2026-10-27T12:00:00.000Z');
+    idb.seed(original);
+    await loadMiniState();
+    assert.equal(idb.head().revision, 1);
+    assert.equal(idb.storeRows('movements').length, 0);
+    idb.removeHead();
+    await assert.rejects(loadMiniState(), /STORAGE_RECOVERY_REQUIRED/);
+    assert.deepEqual(idb.readLegacy(), original);
+  } finally { removeBrowserStorage(); }
+});
