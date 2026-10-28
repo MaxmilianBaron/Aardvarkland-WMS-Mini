@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { getStorageBackend, loadMiniState, saveMiniState } from '../src/storage.ts';
+import { getStorageBackend, loadMiniState, parseMiniBackup, saveMiniState } from '../src/storage.ts';
 
 const FALLBACK_KEY = 'aardvarkland-mini-wms-state-v3';
 
@@ -381,5 +381,158 @@ test('unavailable IndexedDB without a backup fails closed, preserving existing s
     await assert.rejects(loadMiniState(), /STORAGE_RECOVERY_REQUIRED/);
     indexedDbHarness.recover();
     assert.equal((await loadMiniState()).warehouseName, 'Existing warehouse');
+  } finally { removeBrowserStorage(); }
+});
+
+function historyState(count, name = 'History') {
+  const state = miniState(name, '2026-10-27T12:00:00.000Z');
+  state.products = [{
+    id: 'p', sku: 'P', name: 'Product', barcode: '', unit: 'kg',
+    minimumStock: 0, categoryId: null, createdAt: state.updatedAt, updatedAt: state.updatedAt,
+  }];
+  state.locations = [{ id: 'l', code: 'L', name: 'Location', createdAt: state.updatedAt }];
+  state.balances = [{ productId: 'p', locationId: 'l', quantity: 1 }];
+  state.movements = Array.from({ length: count }, (_, i) => movement('m-' + i));
+  state.onboardingCompleted = true;
+  return state;
+}
+
+function movement(id) {
+  return {
+    id, type: 'RECEIPT', productId: 'p',
+    fromLocationId: null, toLocationId: 'l',
+    quantity: 1, delta: 1, note: id,
+    batchId: null, lotNumber: '', expiryDate: null,
+    createdAt: '2026-10-27T12:00:00.000Z',
+  };
+}
+
+test('v3 raw warehouse migrates atomically while preserving its original record and movement order', async () => {
+  const { indexedDbHarness: idb } = installBrowserStorage();
+  try {
+    const legacy = { ...historyState(6), schemaVersion: 1 };
+    idb.seed(legacy);
+    const loaded = await loadMiniState();
+    assert.equal(loaded.schemaVersion, 3);
+    assert.deepEqual(loaded.movements.map(m => m.id), legacy.movements.map(m => m.id));
+    assert.deepEqual(loaded.balances, legacy.balances);
+    assert.equal(idb.head().persistenceVersion, 2);
+    assert.equal(idb.head().revision, 1);
+    assert.equal(idb.storeRows('movements').length, 6);
+    assert.deepEqual(idb.readLegacy(), legacy, 'migration must not destroy the original');
+    assert.deepEqual((await loadMiniState()).movements, loaded.movements);
+  } finally { removeBrowserStorage(); }
+});
+
+test('the large history fast path writes only the prepended movement, not the old records', async () => {
+  const { indexedDbHarness: idb } = installBrowserStorage();
+  try {
+    const initial = historyState(2000);
+    assert.equal(await saveMiniState(initial), 'indexeddb');
+    const before = idb.putCount('movements');
+    const changed = {
+      ...initial, warehouseName: 'One more receipt',
+      movements: [movement('latest'), ...initial.movements],
+    };
+    assert.equal(await saveMiniState(changed), 'indexeddb');
+    assert.equal(idb.putCount('movements') - before, 1);
+    assert.equal(idb.storeRows('movements').length, 2001);
+    assert.equal((await loadMiniState()).movements[0].id, 'latest');
+    assert.equal((await loadMiniState()).movements.at(-1).id, 'm-1999');
+  } finally { removeBrowserStorage(); }
+});
+
+test('abort during migration retains the complete v3 source and is safe to retry', async () => {
+  const { indexedDbHarness: idb } = installBrowserStorage();
+  try {
+    const source = historyState(30);
+    idb.seed({ persistenceVersion: 1, savedAt: source.updatedAt, state: source });
+    idb.abortNextTransaction();
+    const served = await loadMiniState();
+    assert.equal(served.movements.length, 30);
+    assert.equal(idb.head(), undefined);
+    assert.deepEqual(idb.readLegacy().state, source);
+    assert.equal(idb.storeRows('movements').length, 0);
+    const repaired = await loadMiniState();
+    assert.equal(repaired.movements.length, 30);
+    assert.equal(idb.head().revision, 1);
+  } finally { removeBrowserStorage(); }
+});
+
+test('aborted multi-store save is all-or-nothing; local fallback replays after recovery', async () => {
+  const { indexedDbHarness: idb, localStorage } = installBrowserStorage();
+  try {
+    const first = historyState(4);
+    await saveMiniState(first);
+    idb.abortNextTransaction();
+    const second = { ...first, warehouseName: 'Recovered change', movements: [movement('new'), ...first.movements] };
+    assert.equal(await saveMiniState(second), 'localStorage');
+    assert.ok(localStorage.getItem(FALLBACK_KEY));
+    assert.equal(idb.head().revision, 1, 'aborted revision must not publish');
+    assert.equal(idb.storeRows('movements').length, 4, 'aborted movement must not publish');
+    const recovered = await loadMiniState();
+    assert.equal(recovered.warehouseName, 'Recovered change');
+    assert.equal(recovered.movements[0].id, 'new');
+    assert.equal(idb.head().revision, 2);
+    assert.equal(idb.storeRows('movements').length, 5);
+    assert.equal(localStorage.getItem(FALLBACK_KEY), null);
+  } finally { removeBrowserStorage(); }
+});
+
+test('failed IndexedDB and full localStorage quota never report success', async () => {
+  const { indexedDbHarness: idb, localStorage } = installBrowserStorage();
+  const original = localStorage.setItem;
+  try {
+    const first = historyState(2);
+    await saveMiniState(first);
+    idb.abortNextTransaction();
+    localStorage.setItem = () => { throw new Error('QuotaExceededError'); };
+    await assert.rejects(saveMiniState({ ...first, movements: [movement('unsaved'), ...first.movements] }), /QuotaExceededError/);
+    assert.equal(idb.storeRows('movements').length, 2);
+    assert.equal(idb.head().revision, 1);
+  } finally {
+    localStorage.setItem = original;
+    removeBrowserStorage();
+  }
+});
+
+test('cross-tab revision conflict is rejected, not mirrored into localStorage', async () => {
+  const { indexedDbHarness: idb, localStorage } = installBrowserStorage();
+  try {
+    const first = historyState(2);
+    await saveMiniState(first);
+    idb.bumpRevision(); // Model another writer committing a newer revision.
+    await assert.rejects(
+      saveMiniState({ ...first, warehouseName: 'Stale writer' }),
+      /STORAGE_CONFLICT/,
+    );
+    assert.equal(localStorage.getItem(FALLBACK_KEY), null);
+    assert.equal(idb.readStored().state.warehouseName, 'History');
+  } finally { removeBrowserStorage(); }
+});
+
+test('orphaned v4 rows without metadata fail closed instead of resurrecting stale v3', async () => {
+  const { indexedDbHarness: idb } = installBrowserStorage();
+  try {
+    const source = historyState(5);
+    idb.seed(source);
+    await loadMiniState();
+    idb.removeHead();
+    await assert.rejects(loadMiniState(), /STORAGE_RECOVERY_REQUIRED/);
+    assert.deepEqual(idb.readLegacy(), source);
+    assert.equal(idb.storeRows('movements').length, 5);
+  } finally { removeBrowserStorage(); }
+});
+
+test('restore, deletion and reorder replace the history and do not revive discarded rows', async () => {
+  const { indexedDbHarness: idb } = installBrowserStorage();
+  try {
+    const first = historyState(6);
+    await saveMiniState(first);
+    const restored = { ...first, movements: [first.movements[5], first.movements[2], first.movements[0]] };
+    await saveMiniState(restored);
+    assert.deepEqual((await loadMiniState()).movements.map(m => m.id), ['m-5', 'm-2', 'm-0']);
+    assert.equal(idb.storeRows('movements').length, 3);
+    assert.deepEqual(parseMiniBackup(idb.readStored().state).movements.map(m => m.id), ['m-5', 'm-2', 'm-0']);
   } finally { removeBrowserStorage(); }
 });
