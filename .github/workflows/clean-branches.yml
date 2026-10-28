@@ -1,0 +1,95 @@
+name: Clean integrated branches
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integrated-branch-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    if: github.ref == 'refs/heads/main' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Remove branches whose complete contents are in main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        shell: python
+        run: |
+          import json
+          import os
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          base = 'https://api.github.com/repos/' + os.environ['REPOSITORY']
+          with open(os.environ['GITHUB_EVENT_PATH'], encoding='utf-8') as stream:
+              event = json.load(stream)
+
+          def api(path, method='GET'):
+              request = urllib.request.Request(base + path, method=method, headers={
+                  'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+                  'Accept': 'application/vnd.github+json',
+                  'X-GitHub-Api-Version': '2022-11-28',
+              })
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      data = response.read()
+                      return json.loads(data) if data else None
+              except urllib.error.HTTPError as error:
+                  if error.code == 404:
+                      return None
+                  raise
+
+          main_ref = api('/git/ref/heads/main')
+          if not main_ref:
+              raise SystemExit('Main branch was not found.')
+          main_sha = main_ref['object']['sha']
+          if event.get('after') and event['after'] != main_sha:
+              raise SystemExit(0)
+          main = api('/git/commits/' + main_sha)
+          if not main:
+              raise SystemExit('Main commit was not found.')
+
+          pr = event.get('pull_request')
+          if pr:
+              if pr['head']['repo']['full_name'] != os.environ['REPOSITORY']:
+                  raise SystemExit(0)
+              candidates = [{'ref': 'refs/heads/' + pr['head']['ref'], 'object': {'sha': pr['head']['sha']}}]
+          else:
+              candidates = []
+              for prefix in ('fix/', 'test/'):
+                  candidates.extend(api('/git/matching-refs/heads/' + prefix) or [])
+
+          for candidate in candidates:
+              branch = candidate['ref'].removeprefix('refs/heads/')
+              if not branch.startswith(('fix/', 'test/')) or branch == 'main':
+                  continue
+              encoded = urllib.parse.quote(branch, safe='')
+              details = api('/branches/' + encoded)
+              if not details or details.get('protected', True):
+                  continue
+              head_sha = candidate['object']['sha']
+              head = api('/git/commits/' + head_sha)
+              if not head or head['tree']['sha'] != main['tree']['sha']:
+                  continue
+              current = api('/git/ref/heads/' + encoded)
+              current_main = api('/git/ref/heads/main')
+              if not current or not current_main:
+                  continue
+              if current['object']['sha'] != head_sha or current_main['object']['sha'] != main_sha:
+                  continue
+              api('/git/refs/heads/' + encoded, 'DELETE')
+              print('Removed integrated branch: ' + branch)

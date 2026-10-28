@@ -1,0 +1,216 @@
+import type { Language, MovementType } from './types';
+
+export const languageOptions: Array<{ code: Language; label: string }> = [
+  { code: 'cs', label: 'Čeština' },
+  { code: 'en', label: 'English' },
+  { code: 'ua', label: 'Українська' },
+  { code: 'fr', label: 'Français' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'es', label: 'Español' },
+];
+
+export const locales: Record<Language, string> = {
+  cs: 'cs-CZ', en: 'en-GB', ua: 'uk-UA', fr: 'fr-FR', de: 'de-DE', es: 'es-ES',
+};
+
+const cs = {
+  appSubtitle: 'Mini sklad · plně offline',
+  localOnly: 'Data zůstávají v tomto zařízení',
+  saved: 'Uloženo v zařízení',
+  navDashboard: 'Přehled',
+  navStock: 'Zásoby',
+  navOperations: 'Pohyb',
+  navHistory: 'Historie',
+  navData: 'Data',
+  warehouse: 'Název skladu',
+  warehousePlaceholder: 'Např. Hlavní sklad',
+  saveName: 'Uložit název',
+  dashboardTitle: 'Přehled skladu',
+  dashboardIntro: 'Rychlá práce se zásobami, skenerem a pohyby přímo v tomto zařízení.',
+  offlineReady: 'Připraveno offline',
+  scanNow: 'Naskenovat položku',
+  scanNowHint: 'Kamera nebo ruční skener',
+  quickActions: 'Rychlé skladové operace',
+  openProducts: 'Otevřít produkty',
+  receiptHint: 'Přidat zásobu do lokace',
+  issueHint: 'Odebrat zásobu z lokace',
+  moveHint: 'Přesunout mezi lokacemi',
+  countHint: 'Zapsat skutečný stav',
+  startHintTitle: 'Sklad je připraven',
+  mobileScanHint: 'Naskenujte kód ručním skenerem, klávesnicí nebo kamerou telefonu.',
+  selectedProduct: 'Vybraný produkt',
+  productsMetric: 'Produkty',
+  locationsMetric: 'Lokace',
+  unitsMetric: 'Kusů skladem',
+  lowStockMetric: 'Pod minimem',
+  lowStockTitle: 'Nízké zásoby',
+  recentTitle: 'Poslední pohyby',
+  noLowStock: 'Žádný produkt není pod minimem.',
+  noMovements: 'Zatím nebyl zaznamenán žádný pohyb.',
+  startHint: 'Začněte přidáním lokace a produktu.',
+  productsTitle: 'Produkty a zásoby',
+  addProduct: 'Přidat produkt',
+  sku: 'SKU',
+  productName: 'Název produktu',
+  barcode: 'Čárový nebo QR kód',
+  unit: 'Jednotka',
+  minimumStock: 'Minimální zásoba',
+  saveProduct: 'Uložit produkt',
+  search: 'Hledat podle názvu, SKU nebo kódu',
+  totalStock: 'Celkem',
+  noProducts: 'Zatím nejsou žádné produkty.',
+  productSaved: 'Produkt byl uložen.',
+  duplicateSku: 'Toto SKU už existuje.',
+  duplicateBarcode: 'Tento čárový kód už existuje.',
+  requiredFields: 'Vyplňte povinná pole.',
+  locationsTitle: 'Skladové lokace',
+  addLocation: 'Přidat lokaci',
+  locationCode: 'Kód lokace',
+  locationName: 'Název lokace',
+  saveLocation: 'Uložit lokaci',
+  noLocations: 'Zatím nejsou žádné lokace.',
+  locationSaved: 'Lokace byla uložena.',
+  duplicateLocation: 'Tento kód lokace už existuje.',
+  operationsTitle: 'Skladový pohyb',
+  scanLabel: 'Naskenujte nebo zadejte SKU / čárový kód',
+  scanPlaceholder: 'Sken nebo kód produktu',
+  findProduct: 'Najít',
+  scanNotFound: 'Produkt s tímto kódem nebyl nalezen.',
+  movementType: 'Typ pohybu',
+  product: 'Produkt',
+  fromLocation: 'Z lokace',
+  toLocation: 'Do lokace',
+  quantity: 'Množství',
+  note: 'Poznámka',
+  notePlaceholder: 'Volitelná poznámka',
+  submitMovement: 'Uložit pohyb',
+  movementSaved: 'Pohyb byl bezpečně uložen.',
+  receipt: 'Příjem',
+  issue: 'Výdej',
+  move: 'Přesun',
+  count: 'Inventurní stav',
+  chooseProduct: 'Vyberte produkt',
+  chooseLocation: 'Vyberte lokaci',
+  invalidQuantity: 'Zadejte platné množství.',
+  insufficientStock: 'Na zdrojové lokaci není dostatečná zásoba.',
+  fromRequired: 'Vyberte zdrojovou lokaci.',
+  toRequired: 'Vyberte cílovou lokaci.',
+  sameLocation: 'Zdrojová a cílová lokace musí být rozdílné.',
+  historyTitle: 'Historie pohybů',
+  allTypes: 'Všechny typy',
+  date: 'Datum',
+  change: 'Změna',
+  dataTitle: 'Záloha a obnova',
+  backupDescription: 'Exportujte pravidelně úplnou lokální zálohu. Mini WMS nepoužívá cloudový server.',
+  exportBackup: 'Stáhnout zálohu',
+  importBackup: 'Obnovit ze zálohy',
+  importWarning: 'Obnova nahradí všechna současná data v zařízení.',
+  clearData: 'Vymazat všechna data',
+  clearConfirm: 'Opravdu chcete nenávratně vymazat celý lokální sklad?',
+  dataCleared: 'Lokální data byla vymazána.',
+  invalidBackup: 'Soubor není platná záloha Aardvarkland Mini WMS.',
+  backupImported: 'Záloha byla obnovena.',
+  persistentStorage: 'Požádat zařízení o trvalé úložiště',
+  storageGranted: 'Zařízení povolilo trvalé úložiště.',
+  storageNotGranted: 'Trvalé úložiště nebylo povoleno. Pravidelně zálohujte.',
+  cameraOpen: 'Otevřít kameru',
+  cameraClose: 'Zavřít kameru',
+  cameraHint: 'Namiřte kameru na čárový nebo QR kód.',
+  cameraDenied: 'Kamera není dostupná nebo nebylo uděleno oprávnění.',
+  offline: 'Offline',
+  online: 'Online · data jsou stále lokální',
+  language: 'Jazyk', languageAria: 'Přepnout jazyk', themeDark: 'Přepnout na tmavý režim', themeLight: 'Přepnout na světlý režim', edit: 'Upravit', delete: 'Smazat', cancel: 'Zrušit', editProduct: 'Upravit produkt', editLocation: 'Upravit lokaci', deleteProductConfirm: 'Opravdu chcete tento produkt smazat?', deleteLocationConfirm: 'Opravdu chcete tuto lokaci smazat?', productInUse: 'Produkt nelze smazat, protože má historii pohybů.', locationInUse: 'Lokaci nelze smazat, protože je použita v historii pohybů.', storageStatus: 'Stav úložiště', storageIndexedDb: 'IndexedDB (provozní úložiště)', storageLocalStorage: 'localStorage (záložní režim)', lastBackup: 'Poslední záloha', never: 'Nikdy', historyPage: 'Stránka historie', previousPage: 'Předchozí', nextPage: 'Další', pageOf: 'z', backupRecorded: 'Záloha byla zaznamenána.',
+};
+
+type Copy = { [K in keyof typeof cs]: string };
+
+const en: Copy = {
+  appSubtitle: 'Mini warehouse · fully offline', localOnly: 'Data stays on this device', saved: 'Saved on device',
+  navDashboard: 'Overview', navStock: 'Stock', navOperations: 'Movement', navHistory: 'History', navData: 'Data',
+  warehouse: 'Warehouse name', warehousePlaceholder: 'For example Main warehouse', saveName: 'Save name',
+  dashboardTitle: 'Warehouse overview', dashboardIntro: 'Fast stock, scanning and movement workflows directly on this device.', offlineReady: 'Ready offline', scanNow: 'Scan an item', scanNowHint: 'Camera or handheld scanner', quickActions: 'Quick warehouse operations', openProducts: 'Open products', receiptHint: 'Add stock to a location', issueHint: 'Remove stock from a location', moveHint: 'Move between locations', countHint: 'Record the actual count', startHintTitle: 'Warehouse is ready', mobileScanHint: 'Scan a code with a handheld scanner, keyboard or the phone camera.', selectedProduct: 'Selected product', productsMetric: 'Products', locationsMetric: 'Locations', unitsMetric: 'Units in stock', lowStockMetric: 'Below minimum',
+  lowStockTitle: 'Low stock', recentTitle: 'Recent movements', noLowStock: 'No product is below its minimum.', noMovements: 'No movement has been recorded yet.', startHint: 'Start by adding a location and a product.',
+  productsTitle: 'Products and stock', addProduct: 'Add product', sku: 'SKU', productName: 'Product name', barcode: 'Barcode or QR code', unit: 'Unit', minimumStock: 'Minimum stock', saveProduct: 'Save product', search: 'Search by name, SKU or code', totalStock: 'Total', noProducts: 'There are no products yet.', productSaved: 'Product saved.', duplicateSku: 'This SKU already exists.', duplicateBarcode: 'This barcode already exists.', requiredFields: 'Fill in the required fields.',
+  locationsTitle: 'Warehouse locations', addLocation: 'Add location', locationCode: 'Location code', locationName: 'Location name', saveLocation: 'Save location', noLocations: 'There are no locations yet.', locationSaved: 'Location saved.', duplicateLocation: 'This location code already exists.',
+  operationsTitle: 'Stock movement', scanLabel: 'Scan or enter an SKU / barcode', scanPlaceholder: 'Scan or product code', findProduct: 'Find', scanNotFound: 'No product was found for this code.', movementType: 'Movement type', product: 'Product', fromLocation: 'From location', toLocation: 'To location', quantity: 'Quantity', note: 'Note', notePlaceholder: 'Optional note', submitMovement: 'Save movement', movementSaved: 'Movement saved safely.', receipt: 'Receipt', issue: 'Issue', move: 'Move', count: 'Counted stock', chooseProduct: 'Choose a product', chooseLocation: 'Choose a location', invalidQuantity: 'Enter a valid quantity.', insufficientStock: 'There is not enough stock at the source location.', fromRequired: 'Choose a source location.', toRequired: 'Choose a destination location.', sameLocation: 'Source and destination must be different.',
+  historyTitle: 'Movement history', allTypes: 'All types', date: 'Date', change: 'Change',
+  dataTitle: 'Backup and restore', backupDescription: 'Export a complete local backup regularly. Mini WMS does not use a cloud server.', exportBackup: 'Download backup', importBackup: 'Restore from backup', importWarning: 'Restoring replaces all current data on this device.', clearData: 'Delete all data', clearConfirm: 'Do you really want to permanently delete the entire local warehouse?', dataCleared: 'Local data deleted.', invalidBackup: 'This file is not a valid Aardvarkland Mini WMS backup.', backupImported: 'Backup restored.', persistentStorage: 'Ask the device for persistent storage', storageGranted: 'The device granted persistent storage.', storageNotGranted: 'Persistent storage was not granted. Back up regularly.',
+  cameraOpen: 'Open camera', cameraClose: 'Close camera', cameraHint: 'Point the camera at a barcode or QR code.', cameraDenied: 'The camera is unavailable or permission was not granted.', offline: 'Offline', online: 'Online · data is still local', language: 'Language', languageAria: 'Switch language', themeDark: 'Switch to dark mode', themeLight: 'Switch to light mode', edit: 'Edit', delete: 'Delete', cancel: 'Cancel', editProduct: 'Edit product', editLocation: 'Edit location', deleteProductConfirm: 'Do you really want to delete this product?', deleteLocationConfirm: 'Do you really want to delete this location?', productInUse: 'The product cannot be deleted because it has movement history.', locationInUse: 'The location cannot be deleted because it is used by movement history.', storageStatus: 'Storage status', storageIndexedDb: 'IndexedDB (operational storage)', storageLocalStorage: 'localStorage (fallback)', lastBackup: 'Last backup', never: 'Never', historyPage: 'History page', previousPage: 'Previous', nextPage: 'Next', pageOf: 'of', backupRecorded: 'Backup timestamp recorded.',
+};
+
+const ua: Copy = {
+  appSubtitle: 'Мінісклад · повністю офлайн', localOnly: 'Дані залишаються на цьому пристрої', saved: 'Збережено на пристрої',
+  navDashboard: 'Огляд', navStock: 'Запаси', navOperations: 'Рух', navHistory: 'Історія', navData: 'Дані',
+  warehouse: 'Назва складу', warehousePlaceholder: 'Наприклад, Головний склад', saveName: 'Зберегти назву',
+  dashboardTitle: 'Огляд складу', dashboardIntro: 'Швидка робота із запасами, скануванням і рухами безпосередньо на цьому пристрої.', offlineReady: 'Готово офлайн', scanNow: 'Сканувати товар', scanNowHint: 'Камера або ручний сканер', quickActions: 'Швидкі складські операції', openProducts: 'Відкрити товари', receiptHint: 'Додати запас до локації', issueHint: 'Списати запас із локації', moveHint: 'Перемістити між локаціями', countHint: 'Записати фактичний залишок', startHintTitle: 'Склад готовий', mobileScanHint: 'Скануйте код ручним сканером, клавіатурою або камерою телефона.', selectedProduct: 'Вибраний товар', productsMetric: 'Товари', locationsMetric: 'Локації', unitsMetric: 'Одиниць у запасі', lowStockMetric: 'Нижче мінімуму',
+  lowStockTitle: 'Низький запас', recentTitle: 'Останні рухи', noLowStock: 'Жоден товар не нижче мінімуму.', noMovements: 'Рухів ще не зафіксовано.', startHint: 'Почніть із додавання локації та товару.',
+  productsTitle: 'Товари та запаси', addProduct: 'Додати товар', sku: 'SKU', productName: 'Назва товару', barcode: 'Штрихкод або QR-код', unit: 'Одиниця', minimumStock: 'Мінімальний запас', saveProduct: 'Зберегти товар', search: 'Пошук за назвою, SKU або кодом', totalStock: 'Разом', noProducts: 'Товарів ще немає.', productSaved: 'Товар збережено.', duplicateSku: 'Цей SKU вже існує.', duplicateBarcode: 'Цей штрихкод вже існує.', requiredFields: 'Заповніть обов’язкові поля.',
+  locationsTitle: 'Складські локації', addLocation: 'Додати локацію', locationCode: 'Код локації', locationName: 'Назва локації', saveLocation: 'Зберегти локацію', noLocations: 'Локацій ще немає.', locationSaved: 'Локацію збережено.', duplicateLocation: 'Цей код локації вже існує.',
+  operationsTitle: 'Складський рух', scanLabel: 'Відскануйте або введіть SKU / штрихкод', scanPlaceholder: 'Скан або код товару', findProduct: 'Знайти', scanNotFound: 'Товар із цим кодом не знайдено.', movementType: 'Тип руху', product: 'Товар', fromLocation: 'З локації', toLocation: 'До локації', quantity: 'Кількість', note: 'Примітка', notePlaceholder: 'Необов’язкова примітка', submitMovement: 'Зберегти рух', movementSaved: 'Рух безпечно збережено.', receipt: 'Приймання', issue: 'Видача', move: 'Переміщення', count: 'Інвентарний залишок', chooseProduct: 'Виберіть товар', chooseLocation: 'Виберіть локацію', invalidQuantity: 'Введіть дійсну кількість.', insufficientStock: 'У вихідній локації недостатньо запасу.', fromRequired: 'Виберіть вихідну локацію.', toRequired: 'Виберіть цільову локацію.', sameLocation: 'Вихідна й цільова локації мають відрізнятися.',
+  historyTitle: 'Історія рухів', allTypes: 'Усі типи', date: 'Дата', change: 'Зміна',
+  dataTitle: 'Резервна копія та відновлення', backupDescription: 'Регулярно експортуйте повну локальну копію. Mini WMS не використовує хмарний сервер.', exportBackup: 'Завантажити копію', importBackup: 'Відновити з копії', importWarning: 'Відновлення замінить усі поточні дані на пристрої.', clearData: 'Видалити всі дані', clearConfirm: 'Справді назавжди видалити весь локальний склад?', dataCleared: 'Локальні дані видалено.', invalidBackup: 'Файл не є дійсною копією Aardvarkland Mini WMS.', backupImported: 'Копію відновлено.', persistentStorage: 'Запросити постійне сховище', storageGranted: 'Пристрій дозволив постійне сховище.', storageNotGranted: 'Постійне сховище не дозволено. Регулярно створюйте копії.',
+  cameraOpen: 'Відкрити камеру', cameraClose: 'Закрити камеру', cameraHint: 'Наведіть камеру на штрихкод або QR-код.', cameraDenied: 'Камера недоступна або дозвіл не надано.', offline: 'Офлайн', online: 'Онлайн · дані все одно локальні', language: 'Мова', languageAria: 'Перемкнути мову', themeDark: 'Перемкнути на темний режим', themeLight: 'Перемкнути на світлий режим', edit: 'Редагувати', delete: 'Видалити', cancel: 'Скасувати', editProduct: 'Редагувати товар', editLocation: 'Редагувати локацію', deleteProductConfirm: 'Видалити цей товар?', deleteLocationConfirm: 'Видалити цю локацію?', productInUse: 'Товар не можна видалити: є історія рухів.', locationInUse: 'Локацію не можна видалити: вона використовується в історії рухів.', storageStatus: 'Стан сховища', storageIndexedDb: 'IndexedDB (робоче сховище)', storageLocalStorage: 'localStorage (резервний режим)', lastBackup: 'Остання копія', never: 'Ніколи', historyPage: 'Сторінка історії', previousPage: 'Назад', nextPage: 'Далі', pageOf: 'з', backupRecorded: 'Час копії збережено.',
+};
+
+const fr: Copy = {
+  appSubtitle: 'Mini-entrepôt · entièrement hors ligne', localOnly: 'Les données restent sur cet appareil', saved: 'Enregistré sur l’appareil',
+  navDashboard: 'Aperçu', navStock: 'Stock', navOperations: 'Mouvement', navHistory: 'Historique', navData: 'Données',
+  warehouse: 'Nom de l’entrepôt', warehousePlaceholder: 'Par exemple Entrepôt principal', saveName: 'Enregistrer le nom',
+  dashboardTitle: 'Aperçu de l’entrepôt', dashboardIntro: 'Stocks, scans et mouvements rapides directement sur cet appareil.', offlineReady: 'Prêt hors ligne', scanNow: 'Scanner un article', scanNowHint: 'Caméra ou lecteur manuel', quickActions: 'Opérations rapides', openProducts: 'Ouvrir les produits', receiptHint: 'Ajouter du stock à un emplacement', issueHint: 'Retirer du stock d’un emplacement', moveHint: 'Déplacer entre emplacements', countHint: 'Saisir le stock réel', startHintTitle: 'L’entrepôt est prêt', mobileScanHint: 'Scannez un code avec un lecteur, le clavier ou la caméra du téléphone.', selectedProduct: 'Produit sélectionné', productsMetric: 'Produits', locationsMetric: 'Emplacements', unitsMetric: 'Unités en stock', lowStockMetric: 'Sous le minimum',
+  lowStockTitle: 'Stock faible', recentTitle: 'Mouvements récents', noLowStock: 'Aucun produit n’est sous son minimum.', noMovements: 'Aucun mouvement n’a encore été enregistré.', startHint: 'Commencez par ajouter un emplacement et un produit.',
+  productsTitle: 'Produits et stock', addProduct: 'Ajouter un produit', sku: 'SKU', productName: 'Nom du produit', barcode: 'Code-barres ou code QR', unit: 'Unité', minimumStock: 'Stock minimum', saveProduct: 'Enregistrer le produit', search: 'Rechercher par nom, SKU ou code', totalStock: 'Total', noProducts: 'Aucun produit pour le moment.', productSaved: 'Produit enregistré.', duplicateSku: 'Ce SKU existe déjà.', duplicateBarcode: 'Ce code-barres existe déjà.', requiredFields: 'Remplissez les champs obligatoires.',
+  locationsTitle: 'Emplacements de stockage', addLocation: 'Ajouter un emplacement', locationCode: 'Code de l’emplacement', locationName: 'Nom de l’emplacement', saveLocation: 'Enregistrer l’emplacement', noLocations: 'Aucun emplacement pour le moment.', locationSaved: 'Emplacement enregistré.', duplicateLocation: 'Ce code d’emplacement existe déjà.',
+  operationsTitle: 'Mouvement de stock', scanLabel: 'Scannez ou saisissez un SKU / code-barres', scanPlaceholder: 'Scan ou code produit', findProduct: 'Rechercher', scanNotFound: 'Aucun produit ne correspond à ce code.', movementType: 'Type de mouvement', product: 'Produit', fromLocation: 'Depuis l’emplacement', toLocation: 'Vers l’emplacement', quantity: 'Quantité', note: 'Note', notePlaceholder: 'Note facultative', submitMovement: 'Enregistrer le mouvement', movementSaved: 'Mouvement enregistré en toute sécurité.', receipt: 'Réception', issue: 'Sortie', move: 'Transfert', count: 'Stock inventorié', chooseProduct: 'Choisissez un produit', chooseLocation: 'Choisissez un emplacement', invalidQuantity: 'Saisissez une quantité valide.', insufficientStock: 'Le stock est insuffisant à l’emplacement source.', fromRequired: 'Choisissez un emplacement source.', toRequired: 'Choisissez un emplacement de destination.', sameLocation: 'La source et la destination doivent être différentes.',
+  historyTitle: 'Historique des mouvements', allTypes: 'Tous les types', date: 'Date', change: 'Variation',
+  dataTitle: 'Sauvegarde et restauration', backupDescription: 'Exportez régulièrement une sauvegarde locale complète. Mini WMS n’utilise aucun serveur cloud.', exportBackup: 'Télécharger la sauvegarde', importBackup: 'Restaurer une sauvegarde', importWarning: 'La restauration remplacera toutes les données actuelles de cet appareil.', clearData: 'Supprimer toutes les données', clearConfirm: 'Voulez-vous vraiment supprimer définitivement tout l’entrepôt local ?', dataCleared: 'Les données locales ont été supprimées.', invalidBackup: 'Ce fichier n’est pas une sauvegarde Aardvarkland Mini WMS valide.', backupImported: 'Sauvegarde restaurée.', persistentStorage: 'Demander un stockage persistant', storageGranted: 'L’appareil a autorisé le stockage persistant.', storageNotGranted: 'Le stockage persistant n’a pas été autorisé. Effectuez des sauvegardes régulières.',
+  cameraOpen: 'Ouvrir la caméra', cameraClose: 'Fermer la caméra', cameraHint: 'Orientez la caméra vers un code-barres ou un code QR.', cameraDenied: 'La caméra est indisponible ou l’autorisation n’a pas été accordée.', offline: 'Hors ligne', online: 'En ligne · les données restent locales', language: 'Langue', languageAria: 'Changer de langue', themeDark: 'Passer au mode sombre', themeLight: 'Passer au mode clair', edit: 'Modifier', delete: 'Supprimer', cancel: 'Annuler', editProduct: 'Modifier le produit', editLocation: 'Modifier l’emplacement', deleteProductConfirm: 'Supprimer ce produit ?', deleteLocationConfirm: 'Supprimer cet emplacement ?', productInUse: 'Produit impossible à supprimer : historique existant.', locationInUse: 'Emplacement impossible à supprimer : utilisé dans l’historique.', storageStatus: 'État du stockage', storageIndexedDb: 'IndexedDB (stockage opérationnel)', storageLocalStorage: 'localStorage (secours)', lastBackup: 'Dernière sauvegarde', never: 'Jamais', historyPage: 'Page d’historique', previousPage: 'Précédente', nextPage: 'Suivante', pageOf: 'sur', backupRecorded: 'Date de sauvegarde enregistrée.',
+};
+
+const de: Copy = {
+  appSubtitle: 'Mini-Lager · vollständig offline', localOnly: 'Die Daten bleiben auf diesem Gerät', saved: 'Auf dem Gerät gespeichert',
+  navDashboard: 'Übersicht', navStock: 'Bestand', navOperations: 'Bewegung', navHistory: 'Verlauf', navData: 'Daten',
+  warehouse: 'Lagername', warehousePlaceholder: 'Zum Beispiel Hauptlager', saveName: 'Namen speichern',
+  dashboardTitle: 'Lagerübersicht', dashboardIntro: 'Bestände, Scans und Bewegungen schnell direkt auf diesem Gerät bearbeiten.', offlineReady: 'Offline bereit', scanNow: 'Artikel scannen', scanNowHint: 'Kamera oder Handscanner', quickActions: 'Schnelle Lageraktionen', openProducts: 'Produkte öffnen', receiptHint: 'Bestand am Lagerplatz erhöhen', issueHint: 'Bestand vom Lagerplatz entnehmen', moveHint: 'Zwischen Lagerplätzen bewegen', countHint: 'Ist-Bestand erfassen', startHintTitle: 'Lager ist bereit', mobileScanHint: 'Scannen Sie den Code mit Handscanner, Tastatur oder Telefonkamera.', selectedProduct: 'Ausgewähltes Produkt', productsMetric: 'Produkte', locationsMetric: 'Lagerplätze', unitsMetric: 'Einheiten auf Lager', lowStockMetric: 'Unter Mindestbestand',
+  lowStockTitle: 'Niedriger Bestand', recentTitle: 'Letzte Bewegungen', noLowStock: 'Kein Produkt liegt unter dem Mindestbestand.', noMovements: 'Es wurde noch keine Bewegung erfasst.', startHint: 'Fügen Sie zuerst einen Lagerplatz und ein Produkt hinzu.',
+  productsTitle: 'Produkte und Bestand', addProduct: 'Produkt hinzufügen', sku: 'SKU', productName: 'Produktname', barcode: 'Barcode oder QR-Code', unit: 'Einheit', minimumStock: 'Mindestbestand', saveProduct: 'Produkt speichern', search: 'Nach Name, SKU oder Code suchen', totalStock: 'Gesamt', noProducts: 'Noch keine Produkte vorhanden.', productSaved: 'Produkt gespeichert.', duplicateSku: 'Diese SKU ist bereits vorhanden.', duplicateBarcode: 'Dieser Barcode ist bereits vorhanden.', requiredFields: 'Füllen Sie die Pflichtfelder aus.',
+  locationsTitle: 'Lagerplätze', addLocation: 'Lagerplatz hinzufügen', locationCode: 'Lagerplatzcode', locationName: 'Lagerplatzname', saveLocation: 'Lagerplatz speichern', noLocations: 'Noch keine Lagerplätze vorhanden.', locationSaved: 'Lagerplatz gespeichert.', duplicateLocation: 'Dieser Lagerplatzcode ist bereits vorhanden.',
+  operationsTitle: 'Lagerbewegung', scanLabel: 'SKU / Barcode scannen oder eingeben', scanPlaceholder: 'Scan oder Produktcode', findProduct: 'Suchen', scanNotFound: 'Zu diesem Code wurde kein Produkt gefunden.', movementType: 'Bewegungsart', product: 'Produkt', fromLocation: 'Von Lagerplatz', toLocation: 'Zu Lagerplatz', quantity: 'Menge', note: 'Notiz', notePlaceholder: 'Optionale Notiz', submitMovement: 'Bewegung speichern', movementSaved: 'Bewegung sicher gespeichert.', receipt: 'Wareneingang', issue: 'Warenausgang', move: 'Umlagerung', count: 'Gezählter Bestand', chooseProduct: 'Produkt auswählen', chooseLocation: 'Lagerplatz auswählen', invalidQuantity: 'Geben Sie eine gültige Menge ein.', insufficientStock: 'Am Quelllagerplatz ist nicht genügend Bestand vorhanden.', fromRequired: 'Wählen Sie einen Quelllagerplatz.', toRequired: 'Wählen Sie einen Ziellagerplatz.', sameLocation: 'Quelle und Ziel müssen unterschiedlich sein.',
+  historyTitle: 'Bewegungsverlauf', allTypes: 'Alle Arten', date: 'Datum', change: 'Änderung',
+  dataTitle: 'Sicherung und Wiederherstellung', backupDescription: 'Exportieren Sie regelmäßig eine vollständige lokale Sicherung. Mini WMS verwendet keinen Cloud-Server.', exportBackup: 'Sicherung herunterladen', importBackup: 'Aus Sicherung wiederherstellen', importWarning: 'Die Wiederherstellung ersetzt alle aktuellen Daten auf diesem Gerät.', clearData: 'Alle Daten löschen', clearConfirm: 'Möchten Sie wirklich das gesamte lokale Lager dauerhaft löschen?', dataCleared: 'Lokale Daten wurden gelöscht.', invalidBackup: 'Diese Datei ist keine gültige Aardvarkland Mini WMS-Sicherung.', backupImported: 'Sicherung wiederhergestellt.', persistentStorage: 'Dauerhaften Speicher anfordern', storageGranted: 'Das Gerät hat dauerhaften Speicher gewährt.', storageNotGranted: 'Dauerhafter Speicher wurde nicht gewährt. Erstellen Sie regelmäßig Sicherungen.',
+  cameraOpen: 'Kamera öffnen', cameraClose: 'Kamera schließen', cameraHint: 'Richten Sie die Kamera auf einen Barcode oder QR-Code.', cameraDenied: 'Die Kamera ist nicht verfügbar oder die Berechtigung wurde nicht erteilt.', offline: 'Offline', online: 'Online · Daten bleiben lokal', language: 'Sprache', languageAria: 'Sprache wechseln', themeDark: 'Dunkelmodus aktivieren', themeLight: 'Hellmodus aktivieren', edit: 'Bearbeiten', delete: 'Löschen', cancel: 'Abbrechen', editProduct: 'Produkt bearbeiten', editLocation: 'Lagerplatz bearbeiten', deleteProductConfirm: 'Dieses Produkt wirklich löschen?', deleteLocationConfirm: 'Diesen Lagerplatz wirklich löschen?', productInUse: 'Produkt kann wegen vorhandener Bewegungen nicht gelöscht werden.', locationInUse: 'Lagerplatz kann wegen vorhandener Bewegungen nicht gelöscht werden.', storageStatus: 'Speicherstatus', storageIndexedDb: 'IndexedDB (Betriebsspeicher)', storageLocalStorage: 'localStorage (Ersatz)', lastBackup: 'Letzte Sicherung', never: 'Nie', historyPage: 'Verlaufsseite', previousPage: 'Zurück', nextPage: 'Weiter', pageOf: 'von', backupRecorded: 'Sicherungszeit gespeichert.',
+};
+
+const es: Copy = {
+  appSubtitle: 'Mini almacén · totalmente sin conexión', localOnly: 'Los datos permanecen en este dispositivo', saved: 'Guardado en el dispositivo',
+  navDashboard: 'Resumen', navStock: 'Existencias', navOperations: 'Movimiento', navHistory: 'Historial', navData: 'Datos',
+  warehouse: 'Nombre del almacén', warehousePlaceholder: 'Por ejemplo Almacén principal', saveName: 'Guardar nombre',
+  dashboardTitle: 'Resumen del almacén', dashboardIntro: 'Gestione existencias, escaneos y movimientos rápidamente en este dispositivo.', offlineReady: 'Listo sin conexión', scanNow: 'Escanear artículo', scanNowHint: 'Cámara o escáner manual', quickActions: 'Operaciones rápidas', openProducts: 'Abrir productos', receiptHint: 'Añadir stock a una ubicación', issueHint: 'Retirar stock de una ubicación', moveHint: 'Mover entre ubicaciones', countHint: 'Registrar el stock real', startHintTitle: 'El almacén está listo', mobileScanHint: 'Escanee un código con lector manual, teclado o cámara del teléfono.', selectedProduct: 'Producto seleccionado', productsMetric: 'Productos', locationsMetric: 'Ubicaciones', unitsMetric: 'Unidades en stock', lowStockMetric: 'Bajo el mínimo',
+  lowStockTitle: 'Stock bajo', recentTitle: 'Movimientos recientes', noLowStock: 'Ningún producto está por debajo de su mínimo.', noMovements: 'Todavía no se ha registrado ningún movimiento.', startHint: 'Empiece añadiendo una ubicación y un producto.',
+  productsTitle: 'Productos y existencias', addProduct: 'Añadir producto', sku: 'SKU', productName: 'Nombre del producto', barcode: 'Código de barras o QR', unit: 'Unidad', minimumStock: 'Stock mínimo', saveProduct: 'Guardar producto', search: 'Buscar por nombre, SKU o código', totalStock: 'Total', noProducts: 'Todavía no hay productos.', productSaved: 'Producto guardado.', duplicateSku: 'Este SKU ya existe.', duplicateBarcode: 'Este código de barras ya existe.', requiredFields: 'Complete los campos obligatorios.',
+  locationsTitle: 'Ubicaciones del almacén', addLocation: 'Añadir ubicación', locationCode: 'Código de ubicación', locationName: 'Nombre de ubicación', saveLocation: 'Guardar ubicación', noLocations: 'Todavía no hay ubicaciones.', locationSaved: 'Ubicación guardada.', duplicateLocation: 'Este código de ubicación ya existe.',
+  operationsTitle: 'Movimiento de stock', scanLabel: 'Escanee o introduzca un SKU / código de barras', scanPlaceholder: 'Escaneo o código de producto', findProduct: 'Buscar', scanNotFound: 'No se encontró ningún producto con este código.', movementType: 'Tipo de movimiento', product: 'Producto', fromLocation: 'Desde ubicación', toLocation: 'A ubicación', quantity: 'Cantidad', note: 'Nota', notePlaceholder: 'Nota opcional', submitMovement: 'Guardar movimiento', movementSaved: 'Movimiento guardado de forma segura.', receipt: 'Entrada', issue: 'Salida', move: 'Traslado', count: 'Stock contado', chooseProduct: 'Elija un producto', chooseLocation: 'Elija una ubicación', invalidQuantity: 'Introduzca una cantidad válida.', insufficientStock: 'No hay suficiente stock en la ubicación de origen.', fromRequired: 'Elija una ubicación de origen.', toRequired: 'Elija una ubicación de destino.', sameLocation: 'El origen y el destino deben ser diferentes.',
+  historyTitle: 'Historial de movimientos', allTypes: 'Todos los tipos', date: 'Fecha', change: 'Cambio',
+  dataTitle: 'Copia de seguridad y restauración', backupDescription: 'Exporte periódicamente una copia local completa. Mini WMS no utiliza un servidor en la nube.', exportBackup: 'Descargar copia', importBackup: 'Restaurar desde copia', importWarning: 'La restauración sustituirá todos los datos actuales de este dispositivo.', clearData: 'Eliminar todos los datos', clearConfirm: '¿Realmente desea eliminar de forma permanente todo el almacén local?', dataCleared: 'Se eliminaron los datos locales.', invalidBackup: 'El archivo no es una copia válida de Aardvarkland Mini WMS.', backupImported: 'Copia restaurada.', persistentStorage: 'Solicitar almacenamiento persistente', storageGranted: 'El dispositivo concedió almacenamiento persistente.', storageNotGranted: 'No se concedió almacenamiento persistente. Realice copias con regularidad.',
+  cameraOpen: 'Abrir cámara', cameraClose: 'Cerrar cámara', cameraHint: 'Apunte la cámara a un código de barras o QR.', cameraDenied: 'La cámara no está disponible o no se concedió permiso.', offline: 'Sin conexión', online: 'En línea · los datos siguen siendo locales', language: 'Idioma', languageAria: 'Cambiar idioma', themeDark: 'Cambiar al modo oscuro', themeLight: 'Cambiar al modo claro', edit: 'Editar', delete: 'Eliminar', cancel: 'Cancelar', editProduct: 'Editar producto', editLocation: 'Editar ubicación', deleteProductConfirm: '¿Eliminar este producto?', deleteLocationConfirm: '¿Eliminar esta ubicación?', productInUse: 'No se puede eliminar el producto porque tiene movimientos.', locationInUse: 'No se puede eliminar la ubicación porque tiene movimientos.', storageStatus: 'Estado del almacenamiento', storageIndexedDb: 'IndexedDB (almacenamiento operativo)', storageLocalStorage: 'localStorage (respaldo)', lastBackup: 'Última copia', never: 'Nunca', historyPage: 'Página del historial', previousPage: 'Anterior', nextPage: 'Siguiente', pageOf: 'de', backupRecorded: 'Se registró la fecha de la copia.',
+};
+
+const copies: Record<Language, Copy> = { cs, en, ua, fr, de, es };
+
+const featureCopies = {
+  cs: ['Reporty','Kategorie','Nová kategorie','Šarže','Číslo šarže','Datum expirace','Import CSV / Excel','Export Excel','Stáhnout šablonu','Soubor byl importován.','Neplatný importní soubor.','Reporty skladu','Od','Do','Export CSV','Export PDF','Pohyby v období','Aktuální stav','Produkty pod minimem','Expiruje do 30 dnů','Upozornění na expirace','Zapnout upozornění','Vypnout upozornění','Upozornění byla povolena.','Oprávnění k upozorněním nebylo uděleno.','Zámek aplikace','Nastavit PIN','Vypnout PIN','PIN (4–8 číslic)','Aplikace je zamčená','Odemknout','Nesprávný PIN.','První spuštění','Pojmenujte sklad','Vytvořte první lokaci','Přidejte nebo importujte produkty','Proveďte první příjem','Přeskočit průvodce','Pokračovat','Dokončit','Bez kategorie','Přidat kategorii','Kategorie byla uložena.','Vyberte šarži','Bez šarže','Prošlé šarže'],
+  en: ['Reports','Category','New category','Batches','Batch number','Expiry date','Import CSV / Excel','Export Excel','Download template','File imported.','Invalid import file.','Warehouse reports','From','To','Export CSV','Export PDF','Movements in period','Current stock','Products below minimum','Expires within 30 days','Expiry notifications','Enable notifications','Disable notifications','Notifications enabled.','Notification permission was not granted.','App lock','Set PIN','Disable PIN','PIN (4–8 digits)','App is locked','Unlock','Incorrect PIN.','First setup','Name your warehouse','Create the first location','Add or import products','Record the first receipt','Skip guide','Continue','Finish','No category','Add category','Category saved.','Select batch','No batch','Expired batches'],
+  ua: ['Звіти','Категорія','Нова категорія','Партії','Номер партії','Термін придатності','Імпорт CSV / Excel','Експорт Excel','Завантажити шаблон','Файл імпортовано.','Недійсний файл імпорту.','Звіти складу','Від','До','Експорт CSV','Експорт PDF','Рухи за період','Поточні запаси','Товари нижче мінімуму','Закінчується за 30 днів','Сповіщення про термін придатності','Увімкнути сповіщення','Вимкнути сповіщення','Сповіщення увімкнено.','Дозвіл не надано.','Блокування застосунку','Встановити PIN','Вимкнути PIN','PIN (4–8 цифр)','Застосунок заблоковано','Розблокувати','Неправильний PIN.','Перший запуск','Назвіть склад','Створіть першу локацію','Додайте або імпортуйте товари','Виконайте перше надходження','Пропустити','Продовжити','Завершити','Без категорії','Додати категорію','Категорію збережено.','Вибрати партію','Без партії','Прострочені партії'],
+  fr: ['Rapports','Catégorie','Nouvelle catégorie','Lots','Numéro de lot','Date d’expiration','Importer CSV / Excel','Exporter Excel','Télécharger le modèle','Fichier importé.','Fichier d’import invalide.','Rapports d’entrepôt','Du','Au','Exporter CSV','Exporter PDF','Mouvements sur la période','Stock actuel','Produits sous le minimum','Expire sous 30 jours','Alertes d’expiration','Activer les alertes','Désactiver les alertes','Alertes activées.','Autorisation refusée.','Verrouillage','Définir le PIN','Désactiver le PIN','PIN (4–8 chiffres)','Application verrouillée','Déverrouiller','PIN incorrect.','Première configuration','Nommez l’entrepôt','Créez le premier emplacement','Ajoutez ou importez des produits','Enregistrez la première réception','Ignorer le guide','Continuer','Terminer','Sans catégorie','Ajouter une catégorie','Catégorie enregistrée.','Choisir un lot','Sans lot','Lots expirés'],
+  de: ['Berichte','Kategorie','Neue Kategorie','Chargen','Chargennummer','Ablaufdatum','CSV / Excel importieren','Excel exportieren','Vorlage herunterladen','Datei importiert.','Ungültige Importdatei.','Lagerberichte','Von','Bis','CSV exportieren','PDF exportieren','Bewegungen im Zeitraum','Aktueller Bestand','Produkte unter Mindestbestand','Läuft in 30 Tagen ab','Ablaufbenachrichtigungen','Benachrichtigungen aktivieren','Benachrichtigungen deaktivieren','Benachrichtigungen aktiviert.','Berechtigung nicht erteilt.','App-Sperre','PIN festlegen','PIN deaktivieren','PIN (4–8 Ziffern)','App ist gesperrt','Entsperren','Falsche PIN.','Ersteinrichtung','Lager benennen','Ersten Lagerplatz erstellen','Produkte hinzufügen oder importieren','Ersten Wareneingang buchen','Anleitung überspringen','Weiter','Fertig','Keine Kategorie','Kategorie hinzufügen','Kategorie gespeichert.','Charge auswählen','Keine Charge','Abgelaufene Chargen'],
+  es: ['Informes','Categoría','Nueva categoría','Lotes','Número de lote','Fecha de caducidad','Importar CSV / Excel','Exportar Excel','Descargar plantilla','Archivo importado.','Archivo de importación no válido.','Informes de almacén','Desde','Hasta','Exportar CSV','Exportar PDF','Movimientos del período','Stock actual','Productos bajo mínimo','Caduca en 30 días','Avisos de caducidad','Activar avisos','Desactivar avisos','Avisos activados.','Permiso no concedido.','Bloqueo de aplicación','Configurar PIN','Desactivar PIN','PIN (4–8 dígitos)','Aplicación bloqueada','Desbloquear','PIN incorrecto.','Primera configuración','Nombre del almacén','Cree la primera ubicación','Añada o importe productos','Registre la primera entrada','Omitir guía','Continuar','Finalizar','Sin categoría','Añadir categoría','Categoría guardada.','Elegir lote','Sin lote','Lotes caducados'],
+} satisfies Record<Language,string[]>;
+const featureKeys=['navReports','category','newCategory','batches','lotNumber','expiryDate','importSpreadsheet','exportExcel','downloadTemplate','importSuccess','importInvalid','reportsTitle','fromDate','toDate','exportCsv','exportPdf','periodMovements','currentStock','belowMinimum','expiringSoon','lowStockNotifications','enableNotifications','disableNotifications','notificationsEnabled','notificationsDenied','appLock','setPin','disablePin','pinLabel','lockedTitle','unlock','wrongPin','onboardingTitle','onboardingWarehouse','onboardingLocation','onboardingProducts','onboardingReceipt','skipOnboarding','next','finish','noCategory','addCategory','categorySaved','chooseBatch','noBatch','expiredBatches'] as const;
+type FeatureCopy=Record<(typeof featureKeys)[number],string>;
+
+export function copyFor(language: Language): Copy & FeatureCopy {
+  return { ...copies[language], ...Object.fromEntries(featureKeys.map((key,index)=>[key,featureCopies[language][index]])) } as Copy & FeatureCopy;
+}
+
+export function movementLabel(copy: Copy, type: MovementType): string {
+  return { RECEIPT: copy.receipt, ISSUE: copy.issue, MOVE: copy.move, COUNT: copy.count }[type];
+}
