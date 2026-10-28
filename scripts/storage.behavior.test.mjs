@@ -553,3 +553,25 @@ test('missing head after a previously empty v4 migration cannot resurrect stale 
     assert.deepEqual(idb.readLegacy(), original);
   } finally { removeBrowserStorage(); }
 });
+
+test('cached historical movements are immutable and edits force a full safe history rewrite', async () => {
+  const { indexedDbHarness: idb } = installBrowserStorage();
+  try {
+    const first = historyState(8);
+    await saveMiniState(first);
+    assert.equal(Object.isFrozen(first.movements[0]), true);
+    assert.throws(() => { first.movements[0].delta = 999; }, TypeError);
+    const changed = {
+      ...first,
+      movements: [{ ...first.movements[0], note: 'Amended for restored backup' }, ...first.movements.slice(1)],
+    };
+    const previousWrites = idb.putCount('movements');
+    await saveMiniState(changed);
+    assert.equal(idb.putCount('movements') - previousWrites, 8);
+    assert.equal((await loadMiniState()).movements[0].note, 'Amended for restored backup');
+    assert.throws(
+      () => saveMiniState({ ...changed, products: [], balances: [] }),
+      /INVALID_BACKUP/,
+    );
+  } finally { removeBrowserStorage(); }
+});
