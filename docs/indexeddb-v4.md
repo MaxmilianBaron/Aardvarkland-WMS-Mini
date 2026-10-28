@@ -9,7 +9,9 @@ The application remains offline-first. IndexedDB database
 The authoritative v4 data lives in the separate object stores `products`,
 `categories`, `locations`, `balances`, `batches` and `movements`.
 Metadata and a monotonically increasing revision are stored at
-`state/warehouse-incremental-v1` (the v4 activation marker).
+`state/warehouse-incremental-v1`; an independent, permanent activation
+sentinel at `state/warehouse-incremental-ever-activated` prevents a missing
+metadata record from reviving an obsolete pre-migration snapshot.
 
 All of these stores are read in a single readonly transaction, giving a
 consistent state. All updated/deleted records, new movements and the revision
