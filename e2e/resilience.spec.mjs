@@ -73,8 +73,8 @@ test('decimal count and split issues persist exactly, with confirmation only aft
   await expect(page.getByText('Final fractional issue',{exact:false})).toBeVisible();
   await page.screenshot({ path: `${shots}/05-mini-persisted-fractional-history.png`, fullPage:true });
   const quantity = await page.evaluate(() => new Promise((resolve,reject)=>{
-    const req=indexedDB.open('aardvarkland-mini-wms',3);req.onerror=()=>reject(req.error);
-    req.onsuccess=()=>{const db=req.result;const read=db.transaction('state').objectStore('state').get('warehouse');read.onsuccess=()=>{const state=read.result.state??read.result;resolve(state.balances.find(b=>b.productId==='product-oil'&&b.locationId==='location-a01')?.quantity??0);db.close();};};
+    const req=indexedDB.open('aardvarkland-mini-wms',4);req.onerror=()=>reject(req.error);
+    req.onsuccess=()=>{const db=req.result;const read=db.transaction('balances').objectStore('balances').get(JSON.stringify(['product-oil','location-a01']));read.onsuccess=()=>{resolve(read.result?.row?.quantity??0);db.close();};read.onerror=()=>reject(read.error);};
   }));
   expect(quantity).toBe(0); expect(errors).toEqual([]);
 });
