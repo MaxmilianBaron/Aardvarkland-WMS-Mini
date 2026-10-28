@@ -73,12 +73,14 @@ movements. A backup restore, a movement edit, reordering or deletion uses a
 full **transactional replacement** of the history instead of applying an
 unsafe append optimization.
 
-The public API still strictly normalizes and validates the complete
-`MiniState` before saving. This is intentional: v4 minimizes IndexedDB write
-amplification, but validation and UI state creation can still take O(N)
-time/memory for N movements. True streaming domain state and pagination would
-be a separate future change. The objective here is safer record-level
-persistence, **not** a claim of constant-time end-to-end saves.
+The public API still validates the complete `MiniState` before saving.
+Previously validated historical movements are immutable and reused through
+weak-reference canonicalization; their product/location references and
+document-wide uniqueness are still checked. New or modified movements are
+fully validated. This reduces allocations for recurring saves without
+trusting mutable historical records. The history array and uniqueness
+checks remain O(N). True streaming domain state and pagination would be a
+separate future change; the API does **not** promise constant-time saves.
 
 ## Tests
 
@@ -133,3 +135,20 @@ No production-data speedup has been asserted without measurements.
 **Acceptance gate:** CI green, browser migration/rollback checks, verified
 external backup+restore from a real representative device, and reviewed
 benchmark data. Do not auto-merge before these safety checks.
+
+## Example CI measurement (synthetic history)
+
+One successful Ubuntu GitHub Actions run using **Chromium 140.0.7339.186**
+and **five committed writes** per case produced the following medians:
+
+| Historical movements | v3 full document | v4 incremental | v4 / v3 |
+| ---: | ---: | ---: | ---: |
+| 10,000 | 7.1 ms | 2.5 ms | 0.35× |
+| 50,000 | 25.2 ms | 15.3 ms | 0.61× |
+
+The one-time migration took **274 ms** for 10,000 movements and **2,858 ms**
+for 50,000 movements on that runner. See the
+[benchmark run and downloadable JSON](https://github.com/MaxmilianBaron/Aardvarkland-WMS-Mini/actions/runs/40655383842).
+These are synthetic, environment-specific measurements, not production
+latency guarantees. Benchmark results should be rechecked on actual
+Android and desktop devices before rollout.
