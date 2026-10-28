@@ -23,9 +23,20 @@ let cached: PersistedBaseline = { state: null, revision: 0, movementOrder: 0 };
 let cacheKnown = false;
 let databaseFactory: IDBFactory | undefined;
 
+// Historical movements are append-only. Freezing a validated movement lets
+// later saves safely reuse its canonical copy instead of allocating another
+// object for every old movement. Weak keys do not keep disposed states alive.
+const canonicalMovements = new WeakMap<object, MiniMovement>();
+
 // Both reads (including migration/repair) and writes share one in-tab queue.
 // Across tabs the database revision is checked atomically by incrementalDb.
 function remember(state: MiniState | null, revision: number, movementOrder: number): void {
+  if (state) {
+    for (const row of state.movements) {
+      Object.freeze(row);
+      canonicalMovements.set(row, row);
+    }
+  }
   cached = { state, revision, movementOrder };
   cacheKnown = true;
 }
@@ -125,7 +136,7 @@ async function loadMiniStateNow(readOnly: boolean): Promise<MiniState> {
 }
 
 export function saveMiniState(state: MiniState): Promise<StorageBackend> {
-  const normalized = normalizeState(state, true);
+  const normalized = normalizeState(state, true, true);
   const envelope = createEnvelope(normalized);
 
   // IndexedDB transactions created by independent calls may finish out of
@@ -178,7 +189,7 @@ export function parseMiniBackup(value: unknown): MiniState {
   return normalizeState(candidate, true);
 }
 
-function normalizeState(value: unknown, strict = false): MiniState {
+function normalizeState(value: unknown, strict = false, cacheHistory = false): MiniState {
   if (!isRecord(value)) {
     if (strict) throw new Error('INVALID_BACKUP');
     return emptyMiniState();
@@ -194,7 +205,7 @@ function normalizeState(value: unknown, strict = false): MiniState {
   const productIds = new Set(products.map((item) => item.id));
   const locationIds = new Set(locations.map((item) => item.id));
   const balances = normalizeBalances(state.balances, productIds, locationIds, strict);
-  const movements = normalizeMovements(state.movements, productIds, locationIds, strict);
+  const movements = normalizeMovements(state.movements, productIds, locationIds, strict, cacheHistory);
   const batches = normalizeBatches((state as any).batches, productIds, locationIds, strict);
   if (strict) validateDocumentInvariants({ products, categories, locations, balances, movements, batches });
   const updatedAt = typeof state.updatedAt === 'string' && !Number.isNaN(Date.parse(state.updatedAt))
@@ -320,9 +331,25 @@ function normalizeBalances(value: unknown, productIds: Set<string>, locationIds:
   });
 }
 
-function normalizeMovements(value: unknown, productIds: Set<string>, locationIds: Set<string>, strict: boolean): MiniMovement[] {
+function normalizeMovements(
+  value: unknown, productIds: Set<string>, locationIds: Set<string>,
+  strict: boolean, cacheHistory = false,
+): MiniMovement[] {
   if (!Array.isArray(value)) { if (strict) throw new Error('INVALID_BACKUP'); return []; }
   return value.map((item) => {
+    if (cacheHistory && isRecord(item)) {
+      const previous = canonicalMovements.get(item);
+      if (previous) {
+        // References can become invalid if a product or location is removed,
+        // even when the movement itself is immutable.
+        if (!productIds.has(previous.productId)
+          || (previous.fromLocationId !== null && !locationIds.has(previous.fromLocationId))
+          || (previous.toLocationId !== null && !locationIds.has(previous.toLocationId))) {
+          throw new Error('INVALID_BACKUP');
+        }
+        return previous;
+      }
+    }
     const validType = item && typeof item === 'object' && ['RECEIPT', 'ISSUE', 'MOVE', 'COUNT'].includes(String((item as { type?: unknown }).type));
     if (!isRecord(item) || !validType || typeof item.id !== 'string' || typeof item.productId !== 'string'
       || !productIds.has(item.productId) || !Number.isFinite(item.quantity) || Number(item.quantity) < 0
@@ -331,9 +358,16 @@ function normalizeMovements(value: unknown, productIds: Set<string>, locationIds
       || (item.toLocationId !== null && typeof item.toLocationId !== 'string')
       || (item.fromLocationId !== null && !locationIds.has(item.fromLocationId))
       || (item.toLocationId !== null && !locationIds.has(item.toLocationId))) throw new Error('INVALID_BACKUP');
-    return { id: item.id, type: item.type as MovementType, productId: item.productId,
+    const canonical: MiniMovement = { id: item.id, type: item.type as MovementType, productId: item.productId,
       fromLocationId: item.fromLocationId as string | null, toLocationId: item.toLocationId as string | null,
       quantity: Number(item.quantity), delta: Number(item.delta), note: item.note, batchId: typeof item.batchId === 'string' ? item.batchId : null, lotNumber: typeof item.lotNumber === 'string' ? item.lotNumber : '', expiryDate: typeof item.expiryDate === 'string' ? item.expiryDate : null, createdAt: item.createdAt };
+    if (cacheHistory) {
+      Object.freeze(item);
+      Object.freeze(canonical);
+      canonicalMovements.set(item, canonical);
+      canonicalMovements.set(canonical, canonical);
+    }
+    return canonical;
   });
 }
 
