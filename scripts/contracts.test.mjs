@@ -36,6 +36,7 @@ test('Mini shell shares the Server identity and workspace toggles', async () => 
 
 test('Mini WMS stores operational data locally and supports backups', async () => {
   const storage = await read('src/storage.ts')
+  const indexedDb = await read('src/incrementalDb.ts')
   const app = await read('src/App.tsx')
 
   assert.match(indexedDb, /indexedDB\.open/)
