@@ -38,13 +38,14 @@ test('Mini WMS stores operational data locally and supports backups', async () =
   const storage = await read('src/storage.ts')
   const app = await read('src/App.tsx')
 
-  assert.match(storage, /indexedDB\.open/)
+  assert.match(indexedDb, /indexedDB\.open/)
   assert.match(storage, /localStorage/)
   assert.match(app, /JSON\.stringify/)
   assert.match(app, /parseMiniBackup/)
-  assert.match(storage, /DATABASE_VERSION = 3/)
+  assert.match(indexedDb, /DATABASE_VERSION = 4/)
   assert.match(storage, /\[1, 2, 3\]/)
   assert.doesNotMatch(storage, /slice\(0,\s*5_000\)/)
+  assert.match(indexedDb, /STORAGE_CONFLICT/)
 })
 
 test('production service worker precaches the generated JavaScript and CSS shell', async () => {
