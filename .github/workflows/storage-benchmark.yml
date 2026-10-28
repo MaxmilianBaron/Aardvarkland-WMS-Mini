@@ -1,0 +1,41 @@
+name: IndexedDB Performance Benchmark
+
+on:
+  pull_request:
+    paths:
+      - 'src/storage.ts'
+      - 'src/incrementalDb.ts'
+      - 'scripts/benchmark-storage.mjs'
+      - '.github/workflows/storage-benchmark.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: 24.15.0
+          cache: npm
+      - run: npm ci
+      - run: npm ci --prefix e2e --ignore-scripts
+      - run: node e2e/node_modules/@playwright/test/cli.js install --with-deps chromium
+      - name: Measure 10k and 50k movement history
+        env:
+          BENCH_COUNTS: 10000,50000
+          BENCH_SAMPLES: 5
+        run: npm run benchmark:storage > storage-benchmark.json
+      - run: cat storage-benchmark.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: indexeddb-benchmark
+          path: storage-benchmark.json
+          retention-days: 30
