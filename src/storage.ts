@@ -37,7 +37,19 @@ function remember(state: MiniState | null, revision: number, movementOrder: numb
       canonicalMovements.set(row, row);
     }
   }
-  cached = { state, revision, movementOrder };
+  // Callers may edit the state returned by load. Keep the last committed
+  // values and ordering independent of those edits, while sharing only the
+  // validated, frozen movement objects used by the incremental fast path.
+  const snapshot = state ? {
+    ...state,
+    products: state.products.map(row => ({ ...row })),
+    categories: state.categories.map(row => ({ ...row })),
+    locations: state.locations.map(row => ({ ...row })),
+    balances: state.balances.map(row => ({ ...row })),
+    batches: state.batches.map(row => ({ ...row })),
+    movements: [...state.movements],
+  } : null;
+  cached = { state: snapshot, revision, movementOrder };
   cacheKnown = true;
 }
 

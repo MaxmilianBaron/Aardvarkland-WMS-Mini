@@ -575,3 +575,33 @@ test('cached historical movements are immutable and edits force a full safe hist
     );
   } finally { removeBrowserStorage(); }
 });
+
+test('editing loaded master records persists changes independently of the cached baseline', async () => {
+  const { indexedDbHarness: idb } = installBrowserStorage();
+  try {
+    await saveMiniState(historyState(3));
+    const loaded = await loadMiniState();
+    loaded.products[0].name = 'Renamed product';
+    loaded.locations[0].name = 'Renamed location';
+    loaded.balances[0].quantity = 2;
+    await saveMiniState(loaded);
+    const reloaded = await loadMiniState();
+    assert.equal(reloaded.products[0].name, 'Renamed product');
+    assert.equal(reloaded.locations[0].name, 'Renamed location');
+    assert.equal(reloaded.balances[0].quantity, 2);
+  } finally { removeBrowserStorage(); }
+});
+
+test('prepending to loaded history persists a new record without corrupting row counts', async () => {
+  const { indexedDbHarness: idb } = installBrowserStorage();
+  try {
+    await saveMiniState(historyState(3));
+    const loaded = await loadMiniState();
+    const before = idb.putCount('movements');
+    loaded.movements.unshift(movement('prepended-after-load'));
+    await saveMiniState(loaded);
+    assert.equal(idb.putCount('movements') - before, 1);
+    const reloaded = await loadMiniState();
+    assert.deepEqual(reloaded.movements.map(row => row.id), ['prepended-after-load', 'm-0', 'm-1', 'm-2']);
+  } finally { removeBrowserStorage(); }
+});

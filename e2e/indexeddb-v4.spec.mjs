@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 
 const base = process.env.PREVIEW_URL || 'http://127.0.0.1:4175/';
-test.use({ serviceWorkers: 'block' });
+test.use({ serviceWorkers: 'block', viewport: { width: 390, height: 844 } });
 
 // A real Chromium DB, seeded before the app executes any storage code.
 async function seedV3(page) {
@@ -105,4 +106,48 @@ test('Chromium aborted upgrade keeps old document and retries cleanly on reload'
   expect(recovered.head.persistenceVersion).toBe(2);
   expect(recovered.rows).toHaveLength(30);
   expect(recovered.legacy.state.movements).toHaveLength(30);
+});
+
+test('a migrated warehouse exports and restores its complete JSON backup in a fresh browser profile', async ({ page, browser }, testInfo) => {
+  async function downloadBackup(target, filename) {
+    const pending = target.waitForEvent('download');
+    await target.getByRole('button', { name: 'Download backup', exact: true }).click();
+    const download = await pending;
+    const path = testInfo.outputPath(filename);
+    await download.saveAs(path);
+    return { path, state: JSON.parse(await readFile(path, 'utf8')) };
+  }
+
+  await seedV3(page);
+  await page.goto(base + 'app/');
+  await expect(page.locator('.app-shell')).toHaveAttribute('data-save-status', 'saved');
+  await page.locator('.mobile-nav button').nth(5).click();
+  const exported = await downloadBackup(page, 'migrated-warehouse.json');
+  expect(exported.state.schemaVersion).toBe(3);
+  expect(exported.state.warehouseName).toBe('Migrated warehouse');
+  expect(exported.state.movements).toHaveLength(30);
+  expect(exported.state.balances).toEqual([{ productId: 'p', locationId: 'l', quantity: 1 }]);
+
+  const clean = await browser.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 } });
+  try {
+    const restored = await clean.newPage();
+    await restored.goto(base + 'app/');
+    await expect(restored.locator('.app-shell')).toBeVisible();
+    const skip = restored.locator('.modal-card .button--secondary');
+    if (await skip.isVisible()) await skip.click();
+    await expect(restored.locator('.app-shell')).toHaveAttribute('data-save-status', 'saved');
+    await restored.locator('.mobile-nav button').nth(5).click();
+    restored.on('dialog', dialog => dialog.accept());
+    await restored.locator('input[type="file"][accept="application/json,.json"]').setInputFiles(exported.path);
+    await expect(restored.locator('.toast')).toContainText('Backup restored.');
+    await expect.poll(async () => (await inspectV4(restored)).head?.warehouseName).toBe('Migrated warehouse');
+    await expect(restored.locator('.app-shell')).toHaveAttribute('data-save-status', 'saved');
+    await restored.reload();
+    await expect(restored.locator('.app-shell')).toHaveAttribute('data-save-status', 'saved');
+    await restored.locator('.mobile-nav button').nth(5).click();
+    const roundtrip = await downloadBackup(restored, 'restored-warehouse.json');
+    expect({ ...roundtrip.state, lastBackupAt: undefined }).toEqual({ ...exported.state, lastBackupAt: undefined });
+  } finally {
+    await clean.close();
+  }
 });

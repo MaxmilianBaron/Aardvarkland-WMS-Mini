@@ -78,7 +78,9 @@ Previously validated historical movements are immutable and reused through
 weak-reference canonicalization; their product/location references and
 document-wide uniqueness are still checked. New or modified movements are
 fully validated. This reduces allocations for recurring saves without
-trusting mutable historical records. The history array and uniqueness
+trusting mutable historical records. The committed baseline keeps independent
+copies of mutable records and array ordering, so editing a loaded state cannot
+hide pending changes from the incremental comparison. The history array and uniqueness
 checks remain O(N). True streaming domain state and pagination would be a
 separate future change; the API does **not** promise constant-time saves.
 
@@ -132,9 +134,10 @@ on target hardware. The measured v3 path is an explicit reimplementation
 of the prior write shape, **not** execution of a pinned historical app binary.
 No production-data speedup has been asserted without measurements.
 
-**Acceptance gate:** CI green, browser migration/rollback checks, verified
-external backup+restore from a real representative device, and reviewed
-benchmark data. Do not auto-merge before these safety checks.
+**Before deployment to devices with operational warehouse data:** Verify
+migration and recovery, external backup+restore on a representative device,
+and benchmark data from the target hardware. Synthetic demo and browser-test
+results do not replace those device checks.
 
 ## Example CI measurement (synthetic history)
 
