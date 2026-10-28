@@ -72,7 +72,7 @@ function validHead(value: unknown): value is Head {
     && typeof v.updatedAt === 'string'
     && typeof v.warehouseName === 'string'
     && typeof v.onboardingCompleted === 'boolean'
-    && !!v.counts && ROW_STORES.every(name => Number.isSafeInteger(v.counts?.[name]) && v.counts[name] >= 0);
+    && !!v.counts && ROW_STORES.every(name => Number.isSafeInteger(v.counts?.[name]) && v.counts![name] >= 0);
 }
 
 function orderedRows<T>(input: unknown[]): T[] {
