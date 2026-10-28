@@ -12,7 +12,8 @@
     "android:sync": "npm run build && npx cap sync android",
     "android:debug": "npm run android:sync && cd android && gradlew.bat assembleDebug",
     "android:release:aab": "npm run android:sync && cd android && gradlew.bat bundleRelease",
-    "android:open": "npx cap open android"
+    "android:open": "npx cap open android",
+    "benchmark:storage": "node scripts/benchmark-storage.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
