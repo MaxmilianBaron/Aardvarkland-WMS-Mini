@@ -186,6 +186,7 @@ function prependedCount(before: MiniState['movements'], after: MiniState['moveme
   const added = after.length - before.length;
   if (added < 0) return -1;
   for (let i = 0; i < before.length; i += 1) {
+    if (before[i] === after[i + added]) continue; // validated, frozen records
     if (before[i].id !== after[i + added].id
       || JSON.stringify(before[i]) !== JSON.stringify(after[i + added])) return -1;
   }
