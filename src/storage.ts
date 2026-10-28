@@ -1,11 +1,11 @@
 import { emptyMiniState } from './domain';
 import { quantityUnits } from './quantity';
+import {
+  openWarehouseDatabase, readWarehouseSnapshot, writeWarehouseSnapshot,
+  type PersistedBaseline,
+} from './incrementalDb';
 import type { MiniBalance, MiniBatch, MiniCategory, MiniLocation, MiniMovement, MiniProduct, MiniState, MovementType } from './types';
 
-const DATABASE_NAME = 'aardvarkland-mini-wms';
-const DATABASE_VERSION = 3;
-const STORE_NAME = 'state';
-const STATE_KEY = 'warehouse';
 const FALLBACK_KEY = 'aardvarkland-mini-wms-state-v3';
 const V2_FALLBACK_KEY = 'aardvarkland-mini-wms-state-v2';
 const LEGACY_FALLBACK_KEY = 'aardvarkland-mini-wms-state-v1';
@@ -19,49 +19,74 @@ type PersistenceCandidate = { state: MiniState; savedAtMs: number; envelope: Per
 
 let activeBackend: StorageBackend = 'indexeddb';
 let saveQueue: Promise<void> = Promise.resolve();
+let cached: PersistedBaseline = { state: null, revision: 0, movementOrder: 0 };
+let cacheKnown = false;
+let databaseFactory: IDBFactory | undefined;
 
-export async function loadMiniState(readOnly = false): Promise<MiniState> {
+// Both reads (including migration/repair) and writes share one in-tab queue.
+// Across tabs the database revision is checked atomically by incrementalDb.
+function remember(state: MiniState | null, revision: number, movementOrder: number): void {
+  cached = { state, revision, movementOrder };
+  cacheKnown = true;
+}
+
+export function loadMiniState(readOnly = false): Promise<MiniState> {
+  const operation = saveQueue.then(
+    () => loadMiniStateNow(readOnly),
+    () => loadMiniStateNow(readOnly),
+  );
+  saveQueue = operation.then(() => undefined, () => undefined);
+  return operation;
+}
+
+async function loadMiniStateNow(readOnly: boolean): Promise<MiniState> {
   const fallback = readFallbackCandidate();
   let database: IDBDatabase | null = null;
   let invalidPrimary = false;
 
   try {
     database = await openDatabase();
-    const stored = await readState(database);
+    const snapshot = await readWarehouseSnapshot(database);
+    const stored = snapshot.value;
     let primary: PersistenceCandidate | null = null;
 
     if (stored !== undefined && stored !== null) {
       try {
         primary = toPersistenceCandidate(stored, true);
       } catch {
-        primary = null;
         invalidPrimary = true;
       }
     }
 
+    // A corrupt incremental snapshot is NEVER replaced by the stale legacy
+    // record. Preserve all its records for recovery or an external backup.
+    const damagedIncremental = invalidPrimary && snapshot.kind === 'incremental';
+    if (!damagedIncremental) remember(primary?.state ?? null, snapshot.revision, snapshot.movementOrder);
+
     if (fallback && shouldPreferFallback(primary, fallback)) {
+      if (readOnly || damagedIncremental) {
+        activeBackend = 'localStorage';
+        return fallback.state;
+      }
       try {
-        if (!readOnly) await writeState(database, fallback.envelope);
-        if (!readOnly) clearFallbackKeys();
+        await writeState(database, fallback.envelope);
+        clearFallbackKeys();
         activeBackend = 'indexeddb';
       } catch {
-        // The fallback is the newest acknowledged write. Keep it intact until
-        // IndexedDB accepts the repair on a later launch/save.
+        // Keep the newest acknowledged snapshot for later repair.
         activeBackend = 'localStorage';
       }
       return fallback.state;
     }
 
     if (primary) {
-      // Upgrade legacy raw IndexedDB documents to the persistence envelope and
-      // persist any schema normalization. Failure here does not invalidate the
-      // already-read primary state.
-      if (!isCanonicalEnvelope(stored, primary)) {
+      // A v3 document is migrated atomically on the first writable load.
+      // The original v3 record is retained; an interrupted upgrade can retry.
+      if (!readOnly && (snapshot.kind === 'legacy' || !isCanonicalEnvelope(stored, primary))) {
         try {
-          if (!readOnly) await writeState(database, primary.envelope);
+          await writeState(database, primary.envelope);
         } catch {
-          // Keep serving the valid primary snapshot; a future save can repair
-          // the persisted representation.
+          // Valid v3 data is still available. Never clear it on failure.
         }
       }
       if (!readOnly) clearFallbackKeys();
@@ -70,9 +95,13 @@ export async function loadMiniState(readOnly = false): Promise<MiniState> {
     }
 
     if (fallback) {
+      if (readOnly || damagedIncremental) {
+        activeBackend = 'localStorage';
+        return fallback.state;
+      }
       try {
-        if (!readOnly) await writeState(database, fallback.envelope);
-        if (!readOnly) clearFallbackKeys();
+        await writeState(database, fallback.envelope);
+        clearFallbackKeys();
         activeBackend = 'indexeddb';
       } catch {
         activeBackend = 'localStorage';
@@ -84,7 +113,7 @@ export async function loadMiniState(readOnly = false): Promise<MiniState> {
     activeBackend = 'indexeddb';
     return emptyMiniState();
   } catch {
-    // Database failure is not proof of a new, empty warehouse.
+    // Failure to open/read is not evidence that the warehouse is empty.
     if (!fallback) throw new Error('STORAGE_RECOVERY_REQUIRED');
     activeBackend = 'localStorage';
     return fallback.state;
@@ -122,7 +151,10 @@ async function persistMiniState(envelope: PersistenceEnvelope): Promise<StorageB
     activeBackend = 'indexeddb';
     clearFallbackKeys();
     return activeBackend;
-  } catch {
+  } catch (error) {
+    // A second tab saved a different revision. A localStorage fallback here
+    // would later overwrite that newer data; surface the conflict instead.
+    if (error instanceof Error && error.message === 'STORAGE_CONFLICT') throw error;
     activeBackend = 'localStorage';
     window.localStorage.setItem(FALLBACK_KEY, JSON.stringify(envelope));
     return activeBackend;
@@ -366,32 +398,26 @@ function isRecord(value: unknown): value is Record<string, any> {
 }
 
 function openDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    if (typeof indexedDB === 'undefined') { reject(new Error('IndexedDB unavailable')); return; }
-    const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
-    request.onupgradeneeded = () => {
-      if (!request.result.objectStoreNames.contains(STORE_NAME)) request.result.createObjectStore(STORE_NAME);
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error('Database open failed'));
-    request.onblocked = () => reject(new Error('Database upgrade blocked'));
-  });
+  // Test harnesses and browser profiles may swap the IDB factory. The
+  // remembered revision must never be reused against a different database.
+  const factory = globalThis.indexedDB;
+  if (factory !== databaseFactory) {
+    databaseFactory = factory;
+    cacheKnown = false;
+    cached = { state: null, revision: 0, movementOrder: 0 };
+  }
+  return openWarehouseDatabase();
 }
 
-function readState(database: IDBDatabase): Promise<unknown> {
-  return new Promise((resolve, reject) => {
-    const request = database.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get(STATE_KEY);
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error('Database read failed'));
-  });
+async function initializeBaseline(database: IDBDatabase): Promise<void> {
+  if (cacheKnown) return;
+  const snapshot = await readWarehouseSnapshot(database);
+  const primary = snapshot.value == null ? null : toPersistenceCandidate(snapshot.value, true);
+  remember(primary?.state ?? null, snapshot.revision, snapshot.movementOrder);
 }
 
-function writeState(database: IDBDatabase, value: unknown): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const transaction = database.transaction(STORE_NAME, 'readwrite');
-    transaction.objectStore(STORE_NAME).put(value, STATE_KEY);
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error ?? new Error('Database write failed'));
-    transaction.onabort = () => reject(transaction.error ?? new Error('Database write aborted'));
-  });
+async function writeState(database: IDBDatabase, envelope: PersistenceEnvelope): Promise<void> {
+  await initializeBaseline(database);
+  const committed = await writeWarehouseSnapshot(database, envelope, cached);
+  remember(envelope.state, committed.revision, committed.movementOrder);
 }
