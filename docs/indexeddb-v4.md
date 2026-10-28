@@ -3,20 +3,20 @@
 ## On-device schema
 
 The application remains offline-first. IndexedDB database
-\`aardvarkland-mini-wms\` uses schema version **4**, with the legacy
-\`state/warehouse\` document retained as a **frozen pre-migration snapshot**.
+`aardvarkland-mini-wms` uses schema version **4**, with the legacy
+`state/warehouse` document retained as a **frozen pre-migration snapshot**.
 
-The authoritative v4 data lives in the separate object stores \`products\`,
-\`categories\`, \`locations\`, \`balances\`, \`batches\` and \`movements\`.
+The authoritative v4 data lives in the separate object stores `products`,
+`categories`, `locations`, `balances`, `batches` and `movements`.
 Metadata and a monotonically increasing revision are stored at
-\`state/warehouse-incremental-v1\` (the v4 activation marker).
+`state/warehouse-incremental-v1` (the v4 activation marker).
 
 All of these stores are read in a single readonly transaction, giving a
 consistent state. All updated/deleted records, new movements and the revision
 marker are written in **one readwrite transaction**. User-visible save success
-is reported only after the transaction's \`complete\` event.
+is reported only after the transaction's `complete` event.
 
-The public \`MiniState\` and JSON backup formats (schema versions 1, 2 and 3)
+The public `MiniState` and JSON backup formats (schema versions 1, 2 and 3)
 remain unchanged; the application still exports and restores full histories.
 
 ## Upgrade and recovery
@@ -40,13 +40,13 @@ remain unchanged; the application still exports and restores full histories.
    localStorage fallback is attempted; if it also fails (e.g. quota), the save
    rejects, and the UI must show the unsaved state.
 6. Write transactions validate the expected metadata revision *inside the
-   transaction*, rejecting stale concurrent writers with \`STORAGE_CONFLICT\`.
+   transaction*, rejecting stale concurrent writers with `STORAGE_CONFLICT`.
    These conflicts are **not** converted into fallback writes that might
    later overwrite an updated warehouse. The UI's existing Web Lock still
    makes other tabs read-only when available.
 
 **Rollback limitation:** An old application that requests IndexedDB version 3
-cannot open an already-upgraded version 4 database (\`VersionError\`).
+cannot open an already-upgraded version 4 database (`VersionError`).
 Automatically supporting two independently running versions without risk of
 stale writes is not possible. Before downgrading, export a **v3 JSON backup**
 with the updated app, install the older build, reset its isolated storage only
@@ -72,7 +72,7 @@ full **transactional replacement** of the history instead of applying an
 unsafe append optimization.
 
 The public API still strictly normalizes and validates the complete
-\`MiniState\` before saving. This is intentional: v4 minimizes IndexedDB write
+`MiniState` before saving. This is intentional: v4 minimizes IndexedDB write
 amplification, but validation and UI state creation can still take O(N)
 time/memory for N movements. True streaming domain state and pagination would
 be a separate future change. The objective here is safer record-level
@@ -80,12 +80,12 @@ persistence, **not** a claim of constant-time end-to-end saves.
 
 ## Tests
 
-\`\`\`bash
+```bash
 npm ci
 npm run typecheck
 npm test
 npm run build
-\`\`\`
+```
 
 The storage behavior suite covers old raw and enveloped snapshots, decimal
 batches, interrupted migration, atomic transaction abort, fallback recovery,
@@ -99,25 +99,25 @@ save/restore path, not just a simulated transaction API.
 Requires the project's Node.js version, Chromium and Playwright (the e2e
 lockfile pins the version).
 
-\`\`\`bash
+```bash
 npm ci
 npm ci --prefix e2e --ignore-scripts
 node e2e/node_modules/@playwright/test/cli.js install chromium
 npm run benchmark:storage > storage-benchmark.json
-\`\`\`
+```
 
 Optional settings:
 
-\`\`\`bash
+```bash
 BENCH_COUNTS=10000,50000 BENCH_SAMPLES=7 npm run benchmark:storage
-\`\`\`
+```
 
 The benchmark starts a local Vite dev server and uses separate clean Chromium
 profiles for each case. For 10,000 and 50,000 synthetic historical movements
 it seeds a v3 document and compares median, minimum, maximum and individual
 durable-write times for:
 
-- **v3:** strict normalization plus full \`state/warehouse\` IndexedDB put;
+- **v3:** strict normalization plus full `state/warehouse` IndexedDB put;
 - **v4:** strict normalization via the current API plus incremental IndexedDB
   transaction, followed by a record-count consistency check.
 
