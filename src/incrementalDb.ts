@@ -7,6 +7,7 @@ export const DATABASE_VERSION = 4;
 const LEGACY_STORE = 'state';
 const LEGACY_KEY = 'warehouse';
 const HEAD_KEY = 'warehouse-incremental-v1';
+const ACTIVATED_KEY = 'warehouse-incremental-ever-activated';
 const ROW_STORES = ['products', 'categories', 'locations', 'balances', 'batches', 'movements'] as const;
 type RowStore = typeof ROW_STORES[number];
 type OtherStore = Exclude<RowStore, 'movements'>;
@@ -112,6 +113,7 @@ export function readWarehouseSnapshot(db: IDBDatabase): Promise<StoredSnapshot> 
       request.onerror = () => { firstError ??= request.error; };
     };
     watch('head', tx.objectStore(LEGACY_STORE).get(HEAD_KEY));
+    watch('activated', tx.objectStore(LEGACY_STORE).get(ACTIVATED_KEY));
     watch('legacy', tx.objectStore(LEGACY_STORE).get(LEGACY_KEY));
     for (const name of ROW_STORES) watch(name, tx.objectStore(name).getAll());
     tx.oncomplete = () => {
@@ -121,11 +123,14 @@ export function readWarehouseSnapshot(db: IDBDatabase): Promise<StoredSnapshot> 
         if (head == null) {
           // Missing metadata with orphaned records is corruption, not an empty
           // database and not permission to resurrect a stale v3 snapshot.
-          if (ROW_STORES.some(name => raw[name].length)) throw new Error('STORAGE_RECOVERY_REQUIRED');
+          if (results.activated != null || ROW_STORES.some(name => raw[name].length)) {
+            throw new Error('STORAGE_RECOVERY_REQUIRED');
+          }
           resolve({ kind: 'legacy', value: results.legacy, revision: 0, movementOrder: 0 });
           return;
         }
-        if (!validHead(head) || ROW_STORES.some(name => raw[name].length !== head.counts[name])) {
+        if (results.activated !== true || !validHead(head)
+          || ROW_STORES.some(name => raw[name].length !== head.counts[name])) {
           throw new Error('STORAGE_RECOVERY_REQUIRED');
         }
         const state: MiniState = {
@@ -251,31 +256,37 @@ export function writeWarehouseSnapshot(
           onboardingCompleted: state.onboardingCompleted, counts,
         };
         tx.objectStore(LEGACY_STORE).put(metadata, HEAD_KEY);
+        if (!head) tx.objectStore(LEGACY_STORE).put(true, ACTIVATED_KEY);
       } catch (error) { fail(error instanceof Error ? error : new Error(String(error))); }
     };
 
     const getHead = tx.objectStore(LEGACY_STORE).get(HEAD_KEY);
     getHead.onsuccess = () => {
       const raw = getHead.result;
-      if (raw != null && !validHead(raw)) {
-        fail(new Error('STORAGE_RECOVERY_REQUIRED')); return;
-      }
-      if (raw != null) { enqueue(raw); return; }
-      // An interrupted migration cannot leave rows behind (single tx). If
-      // they are present without metadata, never overwrite them silently.
-      let remaining = ROW_STORES.length;
-      let orphaned = false;
-      for (const name of ROW_STORES) {
-        const count = tx.objectStore(name).count();
-        count.onsuccess = () => {
-          orphaned ||= count.result > 0;
-          remaining -= 1;
-          if (remaining === 0) {
-            if (orphaned) fail(new Error('STORAGE_RECOVERY_REQUIRED'));
-            else enqueue(null);
-          }
-        };
-      }
+      const activated = tx.objectStore(LEGACY_STORE).get(ACTIVATED_KEY);
+      activated.onsuccess = () => {
+        if ((raw != null && (!validHead(raw) || activated.result !== true))
+          || (raw == null && activated.result != null)) {
+          fail(new Error('STORAGE_RECOVERY_REQUIRED')); return;
+        }
+        if (raw != null) { enqueue(raw); return; }
+        // An interrupted migration cannot leave rows behind (single tx).
+        // A permanently retained activation marker also prevents a cleared
+        // or lost head from resurrecting the frozen legacy document.
+        let remaining = ROW_STORES.length;
+        let orphaned = false;
+        for (const name of ROW_STORES) {
+          const count = tx.objectStore(name).count();
+          count.onsuccess = () => {
+            orphaned ||= count.result > 0;
+            remaining -= 1;
+            if (remaining === 0) {
+              if (orphaned) fail(new Error('STORAGE_RECOVERY_REQUIRED'));
+              else enqueue(null);
+            }
+          };
+        }
+      };
     };
   });
 }
